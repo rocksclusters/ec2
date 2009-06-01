@@ -20,7 +20,7 @@ NETWORKING=yes
 /bin/rm /boot/vmlinuz*
 /bin/rm /boot/xen-syms*
 cd /tmp
-wget http://<var name="Kickstart_PrivateAddress"/>/ec2/<eval>cat /opt/ec2/ec2.modules.tarname/</eval>
+wget http://<var name="Kickstart_PrivateAddress"/>/ec2/<eval>cat /opt/ec2/ec2.modules.tarname</eval>
 cd /
 tar xzf /tmp/<eval>cat /opt/ec2/ec2.modules.tarname</eval>
 
