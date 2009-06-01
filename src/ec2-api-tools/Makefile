@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.1 2008/05/21 22:24:18 phil Exp $
+# $Id: Makefile,v 1.2 2009/06/01 06:57:55 phil Exp $
 #
 # @Copyright@
 # 
@@ -54,6 +54,9 @@
 # @Copyright@
 #
 # $Log: Makefile,v $
+# Revision 1.2  2009/06/01 06:57:55  phil
+# Adjustment
+#
 # Revision 1.1  2008/05/21 22:24:18  phil
 # API tools RPM.
 #
@@ -97,7 +100,6 @@
 
 PKGROOT = /opt/ec2
 REDHAT.ROOT     = $(PWD)/../../
-ROCKSROOT       = ../../../../..
 -include $(ROCKSROOT)/etc/Rules.mk
 include Rules.mk
 
