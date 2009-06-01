@@ -1,0 +1,64 @@
+<?xml version="1.0" standalone="no"?>
+
+<graph>
+
+	<changelog>
+	</changelog>
+
+	<description>
+
+	Rocks Devel Appliance on EC2.
+
+	</description>
+
+
+	<!-- Graph Ordering for Kickstart Generation -->
+
+	<order head="database-security">
+		<tail>devel-server</tail>
+	</order>
+	<order head="autofs">
+		<tail>devel-server</tail>
+	</order>
+	<order head="networking-client">
+		<tail>ec2-client</tail>
+	</order>
+	<order head="grub">
+		<tail>ec2-client</tail>
+	</order>
+	<order head="partition">
+		<tail>ec2-partition</tail>
+	</order>
+
+	<!-- Graph OO Framework -->
+
+	<edge from="server">
+		<to>devel-server</to>
+	</edge>
+
+	<edge from="devel-client">
+		<to>client</to>
+		<to>foundation-server</to>
+		<to>devel</to>
+		<to>rocks-dist</to>
+		<to>database</to>
+		<to>x11</to>
+		<to>snmp-client</to>
+		<to>rocks-devel</to>
+	</edge>
+
+	<!-- Now add EC2 specific Hacks and updates -->
+	<edge from="server">
+		<to>ec2-server</to>
+		<to>ec2-common</to>
+	</edge>
+
+	<edge from="client">
+		<to>ec2-client</to>
+		<to>ec2-common</to>
+		<to>ec2-partition</to>
+	</edge>
+
+</graph>
+
+

@@ -1,0 +1,42 @@
+<?xml version="1.0" standalone="no"?>
+
+<kickstart>
+
+<post>
+
+<!-- change eth0 to be dhcp and mac address neutral -->
+<file name="/etc/sysconfig/network-scripts/ifcfg-eth0">
+DEVICE=eth0                                            
+BOOTPROTO=dhcp                                       
+ONBOOT=yes     
+</file>
+
+<!-- change network file to not have hostname of gateway -->
+<file name="/etc/sysconfig/network">
+NETWORKING=yes
+</file>
+
+<!-- Get the ec2 modules file (Hack, this needs to be in an EC2 Roll) -->
+/bin/rm /boot/vmlinuz*
+/bin/rm /boot/xen-syms*
+cd /tmp
+wget http://<var name="Kickstart_PrivateAddress"/>/ec2/<eval>cat /opt/ec2/ec2.modules.tarname/</eval>
+cd /
+tar xzf /tmp/<eval>cat /opt/ec2/ec2.modules.tarname</eval>
+
+<!-- Fix-up Grub  More Hacking-->
+<file name="/boot/grub/grub-orig.conf" mode="append">
+<eval>cat /opt/ec2/grub.append</eval>
+</file>
+/bin/sed -i /boot/grub/grub-orig.conf -e "s/^default=0/default=1/"
+
+<!-- remove /install if it exists it is in the wrong place -->
+if [ -d /install ]; then
+     /bin/rm -rf /install
+fi
+
+</post>
+
+
+</kickstart> 
+

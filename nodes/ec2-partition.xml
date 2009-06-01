@@ -1,0 +1,11 @@
+<?xml version="1.0" standalone="no"?>
+
+<kickstart>
+<description> 
+Partitioning required to run in ec2
+</description>
+<pre>
+echo "clearpart --all --initlabel --drives=hda
+part / --size 9500 --ondisk hda " > /tmp/user_partition_info
+</pre>
+</kickstart> 

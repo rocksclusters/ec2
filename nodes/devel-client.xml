@@ -1,0 +1,55 @@
+<?xml version="1.0" standalone="no"?>
+
+<kickstart>
+
+  <description>
+  
+  A Rocks Cluster Devel Server. This is a place to compile.
+
+  </description>
+
+  <changelog>
+  $Log: devel-client.xml,v $
+  Revision 1.1  2009/06/01 07:02:23  phil
+  Checkpoint
+
+  </changelog>
+
+<package>rocks-bittorrent</package>
+
+<post>
+<file name="/etc/motd" mode="append">
+Rocks 5.0(VI) Development Server
+</file>
+chkconfig --del autofs
+
+if [ ! -d  /state/partition1/home/install ]; then 
+	mkdir -p /state/partition1/home/install; 
+fi
+if [ ! -d  /home ]; then 
+	mkdir -p /home; 
+fi
+if [ ! -d  /export/home ]; then 
+	mkdir -p /export/home; 
+fi
+if [ ! -d  /mnt/cdrom ]; then 
+	mkdir -p /mnt/cdrom; 
+fi
+
+<!-- create bind mounts /home and /export/home to this devel inst state partition directory -->
+
+<file name="/etc/fstab" mode="append">
+/state/partition1/home  /home                   none    rw,bind         2 2
+/state/partition1/home  /export/home            none    rw,bind         2 2
+</file>
+
+<!-- record the rolls that are installed on frontend -->
+<file name="/root/populate.rolls.sql">
+<eval> 
+HOME=/root /usr/bin/mysqldump -u apache cluster rolls
+</eval>
+</file>
+
+</post>
+</kickstart> 
+

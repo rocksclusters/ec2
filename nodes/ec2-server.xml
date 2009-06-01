@@ -1,0 +1,9 @@
+<?xml version="1.0" standalone="no"?>
+
+<kickstart>
+<description> Put support files on a Rocks frontend that enables building
+EC2-compatible VMs
+</description>
+<package>ec2-kernel-www</package>
+</kickstart> 
+
