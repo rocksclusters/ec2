@@ -1,0 +1,7 @@
+Download Modules via
+http://ec2-downloads.s3.amazonaws.com/ec2-modules-2.6.18-xenU-ec2-v1.0-x86_64.tgz
+http://ec2-downloads.s3.amazonaws.com/ec2-modules-2.6.18-xenU-ec2-v1.0-i686.tgz 
+
+AMAZON Kernel Identifiers
+aki-9b00e5f2 (32 bit) 
+aki-9800e5f1 (64 bit)
