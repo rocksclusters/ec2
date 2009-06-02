@@ -16,17 +16,19 @@ ONBOOT=yes
 NETWORKING=yes
 </file>
 
-<!-- Get the ec2 modules file (Hack, this needs to be in an EC2 Roll) -->
+<!-- Download the EC2 Modules/Kernel. -->
 /bin/rm /boot/vmlinuz*
 /bin/rm /boot/xen-syms*
 cd /tmp
-wget http://<var name="Kickstart_PrivateAddress"/>/ec2/<eval>cat /opt/ec2/ec2.modules.tarname</eval>
+wget http://<var name="Kickstart_PrivateAddress"/>/ec2/<var name="ec2_kernelTar"/>
 cd /
-tar xzf /tmp/<eval>cat /opt/ec2/ec2.modules.tarname</eval>
+tar xzf /tmp/<var name="ec2_kernelTar"/>
 
 <!-- Fix-up Grub  More Hacking-->
 <file name="/boot/grub/grub-orig.conf" mode="append">
-<eval>cat /opt/ec2/grub.append</eval>
+title Rocks-EC2 (<var name="ec2_kernel"/>)
+	root (hd0,0)
+	kernel <var name="ec2_kernel"/>  ro root=LABEL=/ rhgb quiet
 </file>
 /bin/sed -i /boot/grub/grub-orig.conf -e "s/^default=0/default=1/"
 

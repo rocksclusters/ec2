@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.1 2009/06/01 06:57:34 phil Exp $
+# $Id: Makefile,v 1.2 2009/06/02 05:30:20 phil Exp $
 #
 # @Copyright@
 # 
@@ -54,6 +54,9 @@
 # @Copyright@
 #
 # $Log: Makefile,v $
+# Revision 1.2  2009/06/02 05:30:20  phil
+# Various fixups
+#
 # Revision 1.1  2009/06/01 06:57:34  phil
 # Xen kernel from Amazon. Make into an RPM
 #
@@ -102,19 +105,15 @@ include Rules.mk
 
 MODULES-TAR=$(EC2-MODULES)-$(EC2-NAME)-$(ARCH).tgz
 build:
-	echo "title Rocks-EC2 ($(EC2-NAME))" > grub.append
-	echo -e "\troot (hd0,0)" >> grub.append
-	echo -e "\tkernel vmlinuz-$(EC2-NAME) ro root=LABEL=/ rhgb quiet" >> grub.append
-	echo -n $(MODULES-TAR) > ec2.modules.tarname
-#	tar -zxf $(NAME)-$(DIREXT).$(TARBALL_POSTFIX)
-#	(cd patch-files && find . -type f | grep -v CVS | cpio -pduv ../)
+	echo "/opt/rocks/bin/rocks set var ec2 kernel vmlinux-$(EC2-NAME)" > rocks-set-ec2-vars
+	echo "/opt/rocks/bin/rocks set var ec2 kernelTar $(MODULES-TAR)" >> rocks-set-ec2-vars
+	echo "/opt/rocks/bin/rocks set var ec2 kernelVersion $(EC2-NAME)" >> rocks-set-ec2-vars
 	
 install::
 	mkdir -p $(ROOT)/$(PKGROOT)
-	mkdir -p $(ROOT)/opt/ec2
+	mkdir -p $(ROOT)/opt/ec2/bin
 	$(INSTALL) -m644 $(MODULES-TAR)  $(ROOT)/$(PKGROOT);
-	$(INSTALL) -m644 grub.append $(ROOT)/opt/ec2
-	$(INSTALL) -m644 ec2.modules.tarname $(ROOT)/opt/ec2
+	$(INSTALL) -m755 rocks-set-ec2-vars $(ROOT)/opt/ec2/bin
 
 clean::
 	rm -rf $(NAME)-$(VERSION)
