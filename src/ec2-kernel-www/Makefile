@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.2 2009/06/02 05:30:20 phil Exp $
+# $Id: Makefile,v 1.3 2009/06/04 22:19:08 phil Exp $
 #
 # @Copyright@
 # 
@@ -54,6 +54,9 @@
 # @Copyright@
 #
 # $Log: Makefile,v $
+# Revision 1.3  2009/06/04 22:19:08  phil
+# change vmlinux to vmlinuz in rocks-set-ec2-vars
+#
 # Revision 1.2  2009/06/02 05:30:20  phil
 # Various fixups
 #
@@ -105,7 +108,7 @@ include Rules.mk
 
 MODULES-TAR=$(EC2-MODULES)-$(EC2-NAME)-$(ARCH).tgz
 build:
-	echo "/opt/rocks/bin/rocks set var ec2 kernel vmlinux-$(EC2-NAME)" > rocks-set-ec2-vars
+	echo "/opt/rocks/bin/rocks set var ec2 kernel vmlinuz-$(EC2-NAME)" > rocks-set-ec2-vars
 	echo "/opt/rocks/bin/rocks set var ec2 kernelTar $(MODULES-TAR)" >> rocks-set-ec2-vars
 	echo "/opt/rocks/bin/rocks set var ec2 kernelVersion $(EC2-NAME)" >> rocks-set-ec2-vars
 	
