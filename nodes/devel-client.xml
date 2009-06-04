@@ -10,6 +10,9 @@
 
   <changelog>
   $Log: devel-client.xml,v $
+  Revision 1.2  2009/06/04 19:47:04  phil
+  Small fixups to properly boot the ec2 kernel under Rocks.
+
   Revision 1.1  2009/06/01 07:02:23  phil
   Checkpoint
 
@@ -19,7 +22,7 @@
 
 <post>
 <file name="/etc/motd" mode="append">
-Rocks 5.0(VI) Development Server
+Rocks 5.1(VI) Development Server
 </file>
 chkconfig --del autofs
 
