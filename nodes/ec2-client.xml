@@ -65,6 +65,9 @@ fi
 ]]>
 </file>
 
+if [ ! -d /mnt/ec2image ]; then
+	mkdir -p /mnt/ec2image
+fi
 </post>
 
 </kickstart> 

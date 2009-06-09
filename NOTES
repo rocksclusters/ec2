@@ -1,0 +1,43 @@
+0. On Dom0
+   * Create /mnt/rocksimage
+   * Mount the first partition of the Kickstarted VM.
+        example: lomount -diskimage /state/partition1/xen/disk/devel-server-0-11-0.hda -partition 1 /mnt/rocksimage 
+   * Bind mount where the bundled image should be stored. This is space in
+     Dom0.
+        example:  mount --bind /state/partition1/ec2/images/ /mnt/rocksimage/mnt/ec2image
+
+   * Make sure that all the private keys, certs etc are in the Dom0 space
+
+1. Bundle the volume that we have created. This is done in the chrooted space
+   chroot /mnt/rocksimage
+#!/bin/bash
+S3BUCKET=rocks5.1
+IMAGENAME=rocksdevel
+## Make devices
+MAKEDEV console
+MAKEDEV null
+MAKEDEV zero
+MAKEDEV loop
+MAKEDEV random
+MAKEDEV urandom
+rm -rf /mnt/${IMAGENAME}*
+
+## bundle the vol, the key, username and cert files need to be generalized
+## Takes 5 - 10 minutes
+
+ec2-bundle-vol -d /mnt/ec2image/ -e /mnt/ec2image -c /mnt/ec2image/phil-aws-pub.pem -k /tmp/ec2image/phil-aws-priv.pem -u 572535418485 -p $IMAGENAME --arch x86_64 --no-inherit --kernel aki-9800e5f1
+
+export LD_LIBRARY_PATH=/usr/java/latest/jre/lib/amd64/jli
+
+cd /mnt/ec2image
+
+#upload the bundle -- this can take O(30 minutes)
+
+ec2-upload-bundle -b ${S3BUCKET} -m ${IMAGENAME}.manifest.xml -a `cat phil-aws-access-key-id` -s `cat phil-aws-secret-key`
+
+ec2-register -K phil-aws-priv.pem -C /home/phil/phil-aws-pub.pem ${S3BUCKET}/${IMAGENAME}
+
+
+2. Back in DOM0
+      * undo the bind mount
+      * undo the lomount 
