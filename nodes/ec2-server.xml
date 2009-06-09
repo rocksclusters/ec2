@@ -10,6 +10,8 @@ EC2-compatible VMs
 /opt/rocks/bin/rocks add var service=ec2 component=kernelTar value=None
 /opt/rocks/bin/rocks add var service=ec2 component=kernelVersion value=None
 /opt/rocks/bin/rocks add var service=ec2 component=initrd value=None
+/opt/rocks/bin/rocks add var service=ec2 component=aki_i386 value=None
+/opt/rocks/bin/rocks add var service=ec2 component=aki_x86_64 value=None
 
 /opt/ec2/bin/rocks-set-ec2-vars
 </post>

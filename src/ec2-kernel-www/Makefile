@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.3 2009/06/04 22:19:08 phil Exp $
+# $Id: Makefile,v 1.4 2009/06/09 23:30:41 phil Exp $
 #
 # @Copyright@
 # 
@@ -54,6 +54,9 @@
 # @Copyright@
 #
 # $Log: Makefile,v $
+# Revision 1.4  2009/06/09 23:30:41  phil
+# Keep track of the aki (amazon kernel identifier) that we are using
+#
 # Revision 1.3  2009/06/04 22:19:08  phil
 # change vmlinux to vmlinuz in rocks-set-ec2-vars
 #
@@ -111,6 +114,8 @@ build:
 	echo "/opt/rocks/bin/rocks set var ec2 kernel vmlinuz-$(EC2-NAME)" > rocks-set-ec2-vars
 	echo "/opt/rocks/bin/rocks set var ec2 kernelTar $(MODULES-TAR)" >> rocks-set-ec2-vars
 	echo "/opt/rocks/bin/rocks set var ec2 kernelVersion $(EC2-NAME)" >> rocks-set-ec2-vars
+	echo "/opt/rocks/bin/rocks set var ec2 aki_i386 $(EC2-AKI-I386)" >> rocks-set-ec2-vars
+	echo "/opt/rocks/bin/rocks set var ec2 aki_x86_64 $(EC2-AKI-X86_64)" >> rocks-set-ec2-vars
 	
 install::
 	mkdir -p $(ROOT)/$(PKGROOT)
