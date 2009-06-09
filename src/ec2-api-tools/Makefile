@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.2 2009/06/01 06:57:55 phil Exp $
+# $Id: Makefile,v 1.3 2009/06/09 22:45:29 phil Exp $
 #
 # @Copyright@
 # 
@@ -54,6 +54,9 @@
 # @Copyright@
 #
 # $Log: Makefile,v $
+# Revision 1.3  2009/06/09 22:45:29  phil
+# Fixes. Create profile directories properly
+#
 # Revision 1.2  2009/06/01 06:57:55  phil
 # Adjustment
 #
@@ -116,7 +119,7 @@ install::
 		find . -type d -exec $(INSTALL) -d $(ROOT)/$(PKGROOT)/{} \; ;      \
 		find . -type f -exec $(INSTALL) {} $(ROOT)/$(PKGROOT)/{} \; ;      \
 	)
-	$(INSTALL) -m 755 ec2-apitools.sh $(ROOT)/etc/profile.d/ec2-apitools
+	$(INSTALL) -m 755 ec2-apitools.sh $(ROOT)/etc/profile.d/ec2-apitools.sh
 
 clean::
 	rm -rf $(NAME)-$(VERSION)

@@ -10,6 +10,9 @@
 
   <changelog>
   $Log: devel-client.xml,v $
+  Revision 1.3  2009/06/09 22:45:29  phil
+  Fixes. Create profile directories properly
+
   Revision 1.2  2009/06/04 19:47:04  phil
   Small fixups to properly boot the ec2 kernel under Rocks.
 
@@ -26,25 +29,13 @@ Rocks 5.1(VI) Development Server
 </file>
 chkconfig --del autofs
 
-if [ ! -d  /state/partition1/home/install ]; then 
-	mkdir -p /state/partition1/home/install; 
-fi
 if [ ! -d  /home ]; then 
 	mkdir -p /home; 
 fi
-if [ ! -d  /export/home ]; then 
-	mkdir -p /export/home; 
-fi
+
 if [ ! -d  /mnt/cdrom ]; then 
 	mkdir -p /mnt/cdrom; 
 fi
-
-<!-- create bind mounts /home and /export/home to this devel inst state partition directory -->
-
-<file name="/etc/fstab" mode="append">
-/state/partition1/home  /home                   none    rw,bind         2 2
-/state/partition1/home  /export/home            none    rw,bind         2 2
-</file>
 
 <!-- record the rolls that are installed on frontend -->
 <file name="/root/populate.rolls.sql">
