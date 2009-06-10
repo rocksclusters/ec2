@@ -45,23 +45,63 @@ EC2-enabled Client
 </file>
 
 <!-- Get the user's authorized key as root's key using Amazon published method-->
-<file name="/etc/rc.d/rocksconfig.d/post-90-ec2-root-ssh-key" perms="744">
-<![CDATA[
-#!/bin/bash
+<file name="/etc/rc.d/init.d/ec2-root-ssh" perms="755">
+<![CDATA[#!/bin/sh
+# $Id: ec2-client.xml,v 1.9 2009/06/10 17:58:15 phil Exp $
+#
+# chkconfig: 2345 99 40
+# description: ec2 ssh key access
+#
+. /etc/rc.d/init.d/functions
+
+RETVAL=0
+
+copykeys() {
 if [ ! -d /root/.ssh ] ; then
         mkdir -p /root/.ssh
         chmod 700 /root/.ssh
 fi
 # Fetch public key using HTTP
-curl http://169.254.169.254/2009-04-04//meta-data/public-keys/0/openssh-key > /tmp/my-key
+curl http://169.254.169.254/2009-04-04//meta-data/public-keys/0/openssh-key > /tmp/my-key  2>/dev/null
 if [ $? -eq 0 ] ; then
-       cat /tmp/my-key >> /root/.ssh/authorized_keys
-       chmod 700 /root/.ssh/authorized_keys
-       rm /tmp/my-key
+	cat /tmp/my-key >> /root/.ssh/authorized_keys
+	chmod 700 /root/.ssh/authorized_keys
+	rm /tmp/my-key
+   	return 0
+else
+	return -1
 fi
-]]>
+}
 
+case "$1" in
+   start)
+	echo -n "Adding User-Supplied EC2 Root SSH Key"
+	copykeys 
+	RETVAL=$?
+	echo
+	[ $RETVAL -eq 0 ] 
+	;;
+
+  stop)
+      echo -n "EC2 Root SSH Key "
+	[ $RETVAL -eq 0 ]
+	;;
+
+  restart|reload)
+   	$0 stop
+   	$0 start
+   	RETVAL=$?
+	;;
+  *)
+	echo "Usage: $0 {start|stop|restart}"
+	exit 1
+esac
+
+exit $RETVAL
+]]>
 </file>
+
+chkconfig --add ec2-root-ssh
 
 if [ ! -d /mnt/ec2image ]; then
 	mkdir -p /mnt/ec2image
