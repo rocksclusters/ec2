@@ -47,6 +47,7 @@ EC2-enabled Client
 <!-- Get the user's authorized key as root's key using Amazon published method-->
 <file name="/etc/rc.d/rocksconfig.d/post-90-ec2-root-ssh-key" perms="744">
 <![CDATA[
+#!/bin/bash
 if [ ! -d /root/.ssh ] ; then
         mkdir -p /root/.ssh
         chmod 700 /root/.ssh
@@ -54,15 +55,13 @@ fi
 # Fetch public key using HTTP
 curl http://169.254.169.254/2009-04-04//meta-data/public-keys/0/openssh-key > /tmp/my-key
 if [ $? -eq 0 ] ; then
-	# check if this key is already there
-	grep `cat /tmp/my-key` /root/.ssh/authorized_keys > /dev/null
-	if [ $? -ne 0 ]; then 
-        	cat /tmp/my-key >> /root/.ssh/authorized_keys
-        	chmod 700 /root/.ssh/authorized_keys
-        	rm /tmp/my-key
-	fi
+       cat /tmp/my-key >> /root/.ssh/authorized_keys
+       chmod 700 /root/.ssh/authorized_keys
+       rm /tmp/my-key
 fi
+/bin/rm /etc/rc.d/rocksconfig.d/post-90-ec2-root-ssh-key
 ]]>
+
 </file>
 
 if [ ! -d /mnt/ec2image ]; then
