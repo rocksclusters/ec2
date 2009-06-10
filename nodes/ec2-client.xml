@@ -59,7 +59,6 @@ if [ $? -eq 0 ] ; then
        chmod 700 /root/.ssh/authorized_keys
        rm /tmp/my-key
 fi
-/bin/rm /etc/rc.d/rocksconfig.d/post-90-ec2-root-ssh-key
 ]]>
 
 </file>
