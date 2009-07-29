@@ -1,5 +1,5 @@
 NAME    	= ec2-api-tools
 VERSION 	= 1.3
-RELEASE 	= 19403
+RELEASE 	= 36506
 DIREXT		= $(VERSION)-$(RELEASE)
 TARBALL_POSTFIX	= tar.gz
