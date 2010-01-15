@@ -53,7 +53,7 @@
 		<to>ec2-common</to>
 	</edge>
 
-	<edge from="client">
+	<edge from="client" cond="ec2_enable">
 		<to>ec2-client</to>
 		<to>ec2-common</to>
 		<to>ec2-partition</to>

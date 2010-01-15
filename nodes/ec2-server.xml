@@ -12,7 +12,14 @@ EC2-compatible VMs
 /opt/rocks/bin/rocks add attr ec2_initrd value=None
 /opt/rocks/bin/rocks add attr ec2_aki_i386 value=None
 /opt/rocks/bin/rocks add attr ec2_aki_x86_64 value=None
+
+# Enable ec2 by default for the devel-server appliance
+/opt/rocks/bin/rocks add appliance attr devel-server ec2_enable value=true
+
+# Now populate the ec2 attrs based on the kernel in ec2-kernel-www package.  
+# the following scripts is built by th ec2-kernel-www package
 /opt/ec2/bin/rocks-set-ec2-attrs
+
 </post>
 </kickstart> 
 
