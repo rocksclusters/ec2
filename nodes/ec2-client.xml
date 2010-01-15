@@ -22,12 +22,12 @@ NETWORKING=yes
 cd /tmp
 wget http://&Kickstart_PrivateAddress;/ec2/&ec2_kernelTar;
 cd /
-tar xzf /tmp/<var name="ec2_kernelTar"/>
+tar xzf /tmp/&ec2_kernelTar;
 
 mkinitrd --builtin=ehci-hcd --builtin=ohci-hcd --builtin=uhci-hcd --builtin=xenblk /boot/initrd-&ec2_kernelVersion;  &ec2_kernelVersion;
 <!-- Fix-up Grub  More Hacking-->
 <file name="/boot/grub/grub-orig.conf" mode="append">
-title Rocks-EC2 (<var name="ec2_kernel"/>)
+title Rocks-EC2 (&ec2_kernel;)
 	root (hd0,0)
 	kernel /boot/&ec2_kernel;  ro root=LABEL=/ rhgb quiet
 	initrd /boot/initrd-&ec2_kernelVersion;
@@ -47,7 +47,7 @@ EC2-enabled Client
 <!-- Get the user's authorized key as root's key using Amazon published method-->
 <file name="/etc/rc.d/init.d/ec2-root-ssh" perms="755">
 <![CDATA[#!/bin/sh
-# $Id: ec2-client.xml,v 1.10 2010/01/15 03:27:29 phil Exp $
+# $Id: ec2-client.xml,v 1.11 2010/01/15 04:17:46 phil Exp $
 #
 # chkconfig: 2345 99 40
 # description: ec2 ssh key access
