@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.4 2009/06/09 23:30:41 phil Exp $
+# $Id: Makefile,v 1.5 2010/01/15 03:27:29 phil Exp $
 #
 # @Copyright@
 # 
@@ -54,6 +54,10 @@
 # @Copyright@
 #
 # $Log: Makefile,v $
+# Revision 1.5  2010/01/15 03:27:29  phil
+# Update to use attrs.
+# State -- properly builds devel server. Need to look at bundle/upload commands
+#
 # Revision 1.4  2009/06/09 23:30:41  phil
 # Keep track of the aki (amazon kernel identifier) that we are using
 #
@@ -111,17 +115,17 @@ include Rules.mk
 
 MODULES-TAR=$(EC2-MODULES)-$(EC2-NAME)-$(ARCH).tgz
 build:
-	echo "/opt/rocks/bin/rocks set var ec2 kernel vmlinuz-$(EC2-NAME)" > rocks-set-ec2-vars
-	echo "/opt/rocks/bin/rocks set var ec2 kernelTar $(MODULES-TAR)" >> rocks-set-ec2-vars
-	echo "/opt/rocks/bin/rocks set var ec2 kernelVersion $(EC2-NAME)" >> rocks-set-ec2-vars
-	echo "/opt/rocks/bin/rocks set var ec2 aki_i386 $(EC2-AKI-I386)" >> rocks-set-ec2-vars
-	echo "/opt/rocks/bin/rocks set var ec2 aki_x86_64 $(EC2-AKI-X86_64)" >> rocks-set-ec2-vars
+	echo "/opt/rocks/bin/rocks set attr ec2_kernel vmlinuz-$(EC2-NAME)" > rocks-set-ec2-attrs
+	echo "/opt/rocks/bin/rocks set attr ec2_kernelTar $(MODULES-TAR)" >> rocks-set-ec2-attrs
+	echo "/opt/rocks/bin/rocks set attr ec2_kernelVersion $(EC2-NAME)" >> rocks-set-ec2-attrs
+	echo "/opt/rocks/bin/rocks set attr ec2_aki_i386 $(EC2-AKI-I386)" >> rocks-set-ec2-attrs
+	echo "/opt/rocks/bin/rocks set attr ec2_aki_x86_64 $(EC2-AKI-X86_64)" >> rocks-set-ec2-attrs
 	
 install::
 	mkdir -p $(ROOT)/$(PKGROOT)
 	mkdir -p $(ROOT)/opt/ec2/bin
 	$(INSTALL) -m644 $(MODULES-TAR)  $(ROOT)/$(PKGROOT);
-	$(INSTALL) -m755 rocks-set-ec2-vars $(ROOT)/opt/ec2/bin
+	$(INSTALL) -m755 rocks-set-ec2-attrs $(ROOT)/opt/ec2/bin
 
 clean::
 	rm -rf $(NAME)-$(VERSION)

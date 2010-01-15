@@ -10,6 +10,10 @@
 
   <changelog>
   $Log: devel-client.xml,v $
+  Revision 1.4  2010/01/15 03:27:29  phil
+  Update to use attrs.
+  State -- properly builds devel server. Need to look at bundle/upload commands
+
   Revision 1.3  2009/06/09 22:45:29  phil
   Fixes. Create profile directories properly
 
@@ -25,7 +29,7 @@
 
 <post>
 <file name="/etc/motd" mode="append">
-Rocks 5.1(VI) Development Server
+Rocks &rocks_version; Development Server
 </file>
 chkconfig --del autofs
 
@@ -38,9 +42,10 @@ if [ ! -d  /mnt/cdrom ]; then
 fi
 
 <!-- record the rolls that are installed on frontend -->
+<!-- use foundation mysql -->
 <file name="/root/populate.rolls.sql">
 <eval> 
-HOME=/root /usr/bin/mysqldump -u apache cluster rolls
+MYSQL_HOME=/opt/rocks/etc /usr/bin/mysqldump -u apache cluster rolls
 </eval>
 </file>
 
