@@ -1,8 +1,11 @@
-# $Id: __init__.py,v 1.1 2009/07/29 19:12:49 clem Exp $
+# $Id: __init__.py,v 1.1 2010/01/16 00:08:57 phil Exp $
 #
 # Luca Clementi
 #
 # $Log: __init__.py,v $
+# Revision 1.1  2010/01/16 00:08:57  phil
+# rename the command to upload ec2 bundle
+#
 # Revision 1.1  2009/07/29 19:12:49  clem
 # Added the new rocks command 'rocks create bundle', upgraded the ec2-api-tools...
 #
