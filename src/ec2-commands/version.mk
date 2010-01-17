@@ -1,2 +1,2 @@
-NAME = ec2-commands
+NAME = rocks-ec2-commands
 RELEASE = 1
