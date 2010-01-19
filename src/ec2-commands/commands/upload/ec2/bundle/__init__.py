@@ -1,10 +1,13 @@
-# $Id: __init__.py,v 1.2 2010/01/17 04:56:53 phil Exp $
+# $Id: __init__.py,v 1.3 2010/01/19 06:38:38 phil Exp $
 #
 # Philip Papadopoulos - ppapadopoulos@ucsd.edu
 # many thanks to: 
 # Luca Clementi clem@sdsc.edu
 #
 # $Log: __init__.py,v $
+# Revision 1.3  2010/01/19 06:38:38  phil
+# create and upload commands are now working.
+#
 # Revision 1.2  2010/01/17 04:56:53  phil
 # Checkpoint
 #
@@ -125,7 +128,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
 	        
 	        # 2. --------------------     copy the credential over...
 	        print "Copying credential directory"
-	        retval = os.system('scp -qr %s %s:%s/.ec2 ' % (credentialDir, physhost, outputpath))
+	        retval = os.system('scp -qr %s/* %s:%s/.ec2 ' % (credentialDir, physhost, outputpath))
 	        if retval != 0:
 	            self.abort('Could not copy the credential directory: ' + credentialDir + 
 	                ' to the output path: ' + outputpath)
@@ -134,8 +137,8 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
 	        print "Creating the script"
 		
 		manifest=outputpath + "/%s.manifest.xml" % imagename 
-		awsid = outputpath + "/access-key" 
-		secretkey = outputpath + "/access-key-secret" 
+		awsid = outputpath + "/.ec2/access-key" 
+		secretkey = outputpath + "/.ec2/access-key-secret" 
 	        scriptTemp = self.createScript(bucket,manifest,awsid,secretkey)
 	        retval = os.system('scp -qr %s %s:%s/upload-script.sh ' % (scriptTemp, physhost,outputpath))
 	        if retval != 0:

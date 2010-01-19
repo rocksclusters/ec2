@@ -1,8 +1,11 @@
-# $Id: __init__.py,v 1.1 2010/01/16 00:05:52 phil Exp $
+# $Id: __init__.py,v 1.2 2010/01/19 06:38:38 phil Exp $
 #
 # Luca Clementi clem@sdsc.edu
 #
 # $Log: __init__.py,v $
+# Revision 1.2  2010/01/19 06:38:38  phil
+# create and upload commands are now working.
+#
 # Revision 1.1  2010/01/16 00:05:52  phil
 # Move (rename) bundle command to create ec2 bundle
 #
@@ -80,6 +83,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.create.comman
 		
         if not credentialDir:
 			credentialDir = "~/.ec2/"
+
 
         if not imagename:
             imagename = ""
@@ -203,7 +207,10 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.create.comman
 
         # ------------------------   create the script
         print "Creating the script"
-        scriptTemp = self.createScript()
+        arch=self.command('report.host.attr', [ host, "attr=arch" ] ).strip()
+        aki=self.command('report.host.attr', [ host, "attr=ec2_aki_%s" % arch ] ).strip()
+	print "VM is of arch %s and uses default EC2 kernel ID of %s" % (arch,aki)
+        scriptTemp = self.createScript(arch, aki)
         retval = os.system('scp -qr %s %s:/mnt/rocksimage/mnt/ec2image/script.sh ' % (scriptTemp, physhost))
         if retval != 0:
             self.terminate(physhost)
@@ -220,7 +227,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.create.comman
         self.terminate(physhost)
 
 
-    def createScript(self ):
+    def createScript(self,arch,aki):
         """this function create the script to bundle the VM"""
         outputFile = ""
         script = """#!/bin/bash
@@ -245,9 +252,10 @@ MAKEDEV urandom
 export EC2_HOME=/opt/ec2
 
 echo bundling...
-/opt/ec2/bin/ec2-bundle-vol -d /mnt/ec2image/ -e /mnt/ec2image -c /mnt/ec2image/.ec2/cert.pem -k /mnt/ec2image/.ec2/pk.pem -u `cat /mnt/ec2image/.ec2/user` $IMAGENAME --arch x86_64 --no-inherit --kernel aki-9800e5f1
+/opt/ec2/bin/ec2-bundle-vol -d /mnt/ec2image/ -e /mnt/ec2image -c /mnt/ec2image/.ec2/cert.pem -k /mnt/ec2image/.ec2/pk.pem -u `cat /mnt/ec2image/.ec2/user` $IMAGENAME --arch %s --no-inherit --kernel %s 
 
-        """
+        """ % (arch,aki)
+
         import tempfile
         temp = tempfile.mktemp()
         file = open(temp, 'w')
