@@ -1,112 +1,74 @@
-<chapter id="customizing" xreflabel="Customizing the Condor Roll">
+<chapter id="customizing" xreflabel="Customizing the EC2 Roll">
 
+<title>Customizing the EC2 Roll</title>
 
-<title>Customizing the Condor Roll</title>
-
-<section id="customizing-condor" xreflabel="Customizing Condor">
-<title>Customizing the Condor Roll</title>
+<section id="customizing-ec2" xreflabel="Customizing EC2">
+<title>Customizing the EC2 Roll</title>
 
 <para>
-
-This section describes the default Condor configuration and some simple
-cusomizations that can be applied in Rocks 5.2
+The intent of the EC2 is to be able to build Rocks appliances and run them
+in EC2. This gives the user complete reproducibility of image contents. From the Rocks point
+of view, EC2 demands certain concessions and the Roll makes adjustments in the appliance
+definition
 </para>
-
 <para>
-By default, Condor execution daemons are only installed on Rocks
-<emphasis>compute</emphasis> appliances. For Rocks 5.2 and newer, the Condor
-roll makes use of attributes to enable Condor to be installed on any appliance.
-This may be particularly useful to groups who are including the Xen roll
-and would like Condor to install on VM Container appliances. 
-	
-The basic customizations that can be applied without and scripting/programming
-are as follows
+Some of the requirements put on on EC2-compatible images
 <itemizedlist>
-
 <listitem>
-<para>
-Condor_Client: Enable/Disable Condor Client Installation on any particular Appliance or Host
-</para>
-
-</listitem>
-
-<listitem>
-<para>
-Condor_Master: Redefine the Condor Master that nodes use
+<para> 
+Single Partition. No larger than 10GB.
 </para>
 </listitem>
 
 <listitem>
-<para>
-Condor_MasterNetwork: Define which network interface that the master uses for Condor traffic
+<para> 
+DHCP Network Configuration. One interface only.
 </para>
 </listitem>
 
 <listitem>
-<para>
-Condor_ClientNetwork: Define which network interface that the master uses for Condor traffic
+<para> 
+Only specific Amazon-accepted Kernels
+</para>
+</listitem>
+
+<listitem>
+<para> 
+EC2-specific mechanism to load authorized keys
 </para>
 </listitem>
 
 </itemizedlist>
-
 </para>
 
 <para>
-The following are short examples of how to customize Condor using 
-Rocks commands.
-
-<itemizedlist>
-
-<listitem>
-<para>
-Enable Condor Client on all VM-Containers Appliances:
-<computeroutput>rocks add appliance attr vm-container Condor_Client true </computeroutput>
-</para>
-</listitem>
-
-<listitem>
-<para>
-Disable Condor on particular node:
-<computeroutput>rocks set host attr compute-0-0 Condor_Client false </computeroutput>
-</para>
-</listitem>
-
-
-<listitem>
-<para>
-Define a New Condor Master:
-<computeroutput>rocks set attr Condor_Master central-master.my.edu </computeroutput>
-</para>
-</listitem>
-
-
-</itemizedlist>
-
-</para>
-
-
-<para>
-The configuration of Condor is done during the install, the resulting 
-configuration files are located in /opt/condor/etc. To reconfigure a Condor 
-Pool Master on a Rocks Frontend, make appropriate attribute changes and then run
+To enable an appliance to comply with the EC2-defined paramaters the Rocks
+attribute <computeroutput>ec2_enable</computeroutput> must be set to include the
+modifications to the kickstarted image for compatibility with EC2. The output below shows
+that ec2 is enabled for the devel-server appliance (Development Server Rocks Memberhip). 
+Every devel-server kickstarted will be enabled for ec2. 
 <screen>
-# rocks sync condor
+# rock list appliance attr
+APPLIANCE     ATTR          VALUE
+frontend:     managed       false
+compute:      managed       true 
+devel-server: ec2_enable    true 
 </screen>
 </para>
 
 <para>
-For worker nodes, apply changes and then reinstall the worker nodes. 
+The ec2_enable attribute includes sections of the graph that will make the appropriate 
+modifications. An ec2-enabled appliance runs just fine on a Rocks cluster. This enables
+local testing of appliance definitions before uploading a bundled image into EC2.
 </para>
 
+<tip>
 <para>
-To find information about administrering and using Condor Pools
-please see the original Condor manual at <ulink
-url="http://www.cs.wisc.edu/condor/manual">Condor
-manuals</ulink>
+You can make any appliance ec2-compatible by setting the ec2_enable attribute and
+rebuilding the vm on the local cluster. However, some software in your appliance may
+be dependent on your cluster headnode.
 </para>
-
+</tip>
 </section>
-
 </chapter>
 

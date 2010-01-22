@@ -1,0 +1,234 @@
+<chapter id="building" xreflabel="Building an EC2 Image">
+
+
+<title>Building an EC2 Image</title>
+
+<section id="building-ec2-image" xreflabel="Building an EC2 Image">
+<title>Overview of Creating your first EC2 Image using Rocks</title>
+
+<para>
+
+This section walks through the steps of creating an EC2 Image using Rocks. 
+It is based on the included <emphasis>Development Appliance</emphasis> included in
+the roll. Users should take this appliance as a guide for building their own
+EC2 appliances. The included development appliance, when run either on the local Rocks cluster
+or in EC2 can be used to build Rolls. It also includes a working (but unpopulated) Rocks database. 
+</para>
+
+<para>
+This example assumes that you have the Xen roll (required) and VM-container (Called VM-container-0-0) in your development cluster. The steps are then. It also assumes that root's .ec2 directory
+has been properly populated with keys and certificates.
+<orderedlist>
+
+<listitem>
+<para>
+Build a local development appliance.
+</para>
+
+</listitem>
+
+<listitem>
+<para>
+Bundle the appliance using the command <computeroutput>rocks create ec2 bundle &lt;hostname&gt;
+</computeroutput>
+</para>
+</listitem>
+
+<listitem>
+<para>
+Upload the Bundled appliance using the command <computeroutput>rocks upload ec2 bundle &lt;hostname&gt;</computeroutput>
+</para>
+</listitem>
+
+<listitem>
+<para>
+Register the bundled appliance using <computeroutput>ec2-register-image</computeroutput> to
+get a valid AMI (Amazon Machine Image) Identifier
+</para>
+</listitem>
+
+<listitem>
+<para>
+Run the AMI using <computeroutput>ec2-run-instances</computeroutput>
+</para>
+</listitem>
+
+</orderedlist>
+</para>
+
+<para>
+The final step of running and EC2 instance can accomplished from the command line or from
+the Amazon web console
+</para>
+
+</section>
+
+<section id="walkthrough-building-ec2-image" xreflabel="Walkthrough Building an EC2 Image">
+<title>Walkthrough of Creating your first EC2 Image using Rocks</title>
+<orderedlist>
+<listitem>
+<para>
+Add and build a virtual development appliance
+<screen>
+# rocks add host vm vm-container-0-0 membership="Development Appliance"
+added VM devel-server-0-0-0 on physical node vm-container-0-0
+# rocks set host boot action=install devel-server-0-0-0
+# rocks start host devel-server-0-0-0
+</screen>
+
+<tip>
+<para>
+You must wait for the development server to complete its installation. When complete, you will
+want to shut it down. via
+</para>
+
+<screen>
+# ssh devel-server-0-0-0 "shutdown -h now"
+</screen>
+</tip>
+</para>
+</listitem>
+
+<listitem>
+<para>
+Bundle the image. Because of the way EC2's bundling software works, there must be sufficient disk
+space on the VM-container for two copies of the disk contents.
+<screen>
+# rocks create ec2 bundle devel-server-0-0-0 imagename=devel-server-0-0-0
+Creating output directory
+Mounting files systems 
+Copying credentials
+Removing root password
+Creating the script
+Running the bundle script, this step might take 10-20 minutes
+bundling ...
+Copying / into image file /mnt/ec2image/devel-server-0-0-0
+.
+.
+.
+</screen>
+</para>
+<para> 
+When complete the output of creating the bundle will look similar to 
+<screen>
+Created devel-server-0-0-0.part.096
+Created devel-server-0-0-0.part.097
+Created devel-server-0-0-0.part.098
+Created devel-server-0-0-0.part.099
+Created devel-server-0-0-0.part.100
+Generating digests for each part ...
+Digests generated.
+Creating bundle manifest ...
+ec2-bundle-vol complete
+</screen>
+</para>
+</listitem>
+
+<listitem>
+<para> <emphasis>Upload the image into Amazon S3</emphasis>. The bundled image must be
+uploaded into Amazon's S3 (Simple Storage Service).  You must choose an S3 bucket name into
+which the bundled parts are stored.
+<screen>
+# rocks upload ec2 bundle devel-server-0-0-0 myTest imagename=devel-server-0-0-0 
+Copying credential directory
+Creating the script
+Running the upload script. this step may take 30-60 minutes
+depending on your connection to S3
+uploading ....
+Uploading bundle image parts to https://s3.amazonaws.com:443/myTest ...
+Uploaded devel-server-0-0-0.part.000 to https://s3.amazonaws.com:443/myTest/devel-server-0-0-0.part000. 
+Uploaded devel-server-0-0-0.part.001 to https://s3.amazonaws.com:443/myTest/devel-server-0-0-0.part001. 
+.
+.
+.
+Uploaded devel-server-0-0-0.part.100 to https://s3.amazonaws.com:443/myTest/devel-server-0-0-0.part100. 
+Uploading manifest ...
+Uploaded manifest to https://s3.amazonaws.com:443/myTest/devel-server-0-0-0.manifest.xml 
+Bundle upload completed..
+</screen>
+</para>
+<tip>
+<para> S3 uploads are not 100% reliable. If the upload fails, simply re-run the 
+<computeroutput> rocks upload ec2 bundle</computeroutput> command.
+</para>
+</tip>
+</listitem>
+
+<listitem>
+<para> Register the image with Amazon EC2. The following will give you an Amazon
+AMI. You must use this in thee next step
+<screen>
+export EC2_PRIVATE_KEY=/root/.ec2/pk.pem
+export EC2_CERT=/root/.ec2/cert.pem 
+# ec2-register myTest/devel-server-0-0-0.manifest.xml
+IMAGE   ami-6b608d08
+</screen>
+</para>
+</listitem>
+
+
+<listitem>
+<para> Start an Amazon AMI. The -k command must be the name of a register Amazon keypair 
+<screen>
+export EC2_PRIVATE_KEY=/root/.ec2/pk.pem
+export EC2_CERT=/root/.ec2/cert.pem 
+# ec2-run-instances -t m1.large ami-6b608d08 -k phil-aws
+RESERVATION     r-6cee7f04      572535418485    default
+INSTANCE        i-7c516914      ami-6b608d08                    pending phil-aws        0         m1.large 2010-01-19T19:01:38+0000        us-east-1b      aki-9800e5f1                    monitoring-disabled
+
+#ec2-describe-instances
+RESERVATION     r-6cee7f04      572535418485    default
+INSTANCE        i-7c516914      ami-6b608d08                    pending phil-aws        0         m1.large 2010-01-19T19:01:38+0000        us-east-1b      aki-9800e5f1                    monitoring-disabled
+
+[root@landphil ec2-commands]# ec2-describe-instances
+RESERVATION     r-6cee7f04      572535418485    default
+INSTANCE        i-7c516914      ami-6b608d02                    pending phil-aws        0         m1.large 2010-01-19T19:01:38+0000        us-east-1b      aki-9800e5f1                    monitoring-disabled
+.
+.
+.
+
+[root@landphil ec2-commands]# ec2-describe-instances
+RESERVATION     r-6cee7f04      572535418485    default
+INSTANCE        i-7c516914      ami-6b608d08    ec2-67-202-16-68.compute-1.amazonaws.com        domU-12-31-39-09-BC-82.compute-1.internal  running phil-aws        0               m1.large        2010-01-19T19:01:38+0000   us-east-1b      aki-9800e5f1                    monitoring-disabled
+</screen>
+</para>
+</listitem>
+
+
+<listitem>
+<para> Login into the runnning instance. IP address is from the above output. In this instance, the file phil-gpg is the private key of the "phil-aws" keypair registered with Amazon. You MUST specifify a registered key pair to root access to the running image.
+<screen>
+
+# ssh-agent $SHELL              
+# ssh-add phil-gpg 
+Identity added: phil-gpg (phil-gpg)
+# ssh ec2-67-202-16-68.compute-1.amazonaws.com
+Warning: Permanently added 'ec2-67-202-16-68.compute-1.amazonaws.com' (RSA) to the list of known hosts.
+Last login: Fri Jan 15 16:39:47 2010 from landphil.local
+Rocks 5.2 (Chimichanga)
+Profile built 20:15 14-Jan-2010
+
+Kickstarted 20:32 14-Jan-2010
+EC2-enabled Client
+Rocks 5.2 Development Server
+[root@domU-12-31-39-09-BC-82 ~]# 
+.
+.
+.
+
+[root@domU-12-31-39-09-BC-82 ~]# shutdown -h now
+</screen>
+</para>
+<warning>
+<para>
+Do NOT forget to shut down a running EC2 instance. Your credit card is charged for the time your 
+machine is on irrespective of actual use. 
+</para>
+</warning>
+</listitem>
+</orderedlist>
+
+</section>
+
+</chapter>
+

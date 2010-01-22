@@ -1,10 +1,13 @@
 <!--
-$Id: index.sgml,v 1.1 2010/01/22 01:12:44 phil Exp $
+$Id: index.sgml,v 1.2 2010/01/22 06:32:31 phil Exp $
 
 @Copyright@
 @Copyright@
 
 $Log: index.sgml,v $
+Revision 1.2  2010/01/22 06:32:31  phil
+Updated User's guide.
+
 Revision 1.1  2010/01/22 01:12:44  phil
 Checkpoint on Users Guide
 
@@ -59,7 +62,9 @@ make condor docs look like other rolls' docs
 &source_installing;
 &source_using;
 &source_credentials;
+&source_building;
 &source_customizing;
+&source_roll-commands;
 &source_appendix;
 
 </book>
