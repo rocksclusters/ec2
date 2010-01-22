@@ -1,0 +1,76 @@
+<chapter id="installing" xreflabel="Installing">
+
+
+<title>Installing the EC2 Roll</title>
+
+<section id="adding-the-roll" xreflabel="Adding the Roll">
+<title>Adding the Roll</title>
+
+<para>
+
+The EC2 Roll can be installed during the Frontend installation or added
+to a running frontend. In either case, virtual machine containers (VM-Containers in
+the Xen roll)  nodes must be (re)installed.
+
+</para>
+
+
+<para>
+	
+The EC2 Roll is added to a Frontend installation in exactly the same
+manner as the required base Roll. Simply select the EC2 roll as you would 
+any network- or CD-based roll.
+
+<mediaobject>
+    <imageobject>
+        <imagedata fileref="images/24.png" scale=50>
+    </imageobject>
+</mediaobject>
+
+</para>
+
+
+<para>
+
+Once the EC2 Roll is loaded the installer will continue installation
+automatically with no further user input. A sample EC2-compatible appliance type
+("Development Appliance") will be added, Rocks command set extensions and Amazon client commands.
+
+In theory, any Rocks appliance can be made EC2 compatible using this Roll. However, not all
+software installed on generic appliances will necessarily function properly in the EC2 network 
+environment. The included Development Appliance should be used as a guide for building systems 
+that can function inside of EC2 without a Rocks frontend. 
+
+</para>
+
+
+</section>
+
+
+<section id="frontend-boot" xreflabel="Frontend Boot">
+<title>Frontend Boot</title>
+
+<para>
+On first boot, the EC2 roll will complete its configuration.
+</para>
+
+</section>
+
+<section id="Install-running" xreflabel="Install on Running System">
+<title>Install on Running System</title>
+<para>
+The EC2 Roll can be installed on a running system. The following assumes
+that roll is available in .iso form and is called "&document_rollname;.iso".
+</para>
+<screen>
+$ su - root 
+# rocks add roll &document_rollname;.iso
+# rocks enable roll &document_rollname;
+# rocks create distro
+# rocks run roll ec2 | bash
+</screen>
+
+</section>
+
+
+</chapter>

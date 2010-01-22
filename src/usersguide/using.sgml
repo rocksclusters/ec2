@@ -1,0 +1,60 @@
+<chapter id="using" xreflabel="Using the Condor Roll">
+
+
+<title>Using the EC2 Roll</title>
+
+<section id="using-ec2" xreflabel="Using EC2">
+<title>Using EC2 Roll</title>
+
+<para>
+This section explains the basic steps for building an EC2 compatible appliance
+</para>
+
+<para>
+The basic Steps for building and Running an EC2 VM (Hereafter called an <emphasis>AMI</emphasis> 
+or Amazon Machine Image) are as follows. When starting from scratch, it takes 60 - 90  minutes
+to complete all steps.
+</para>
+
+<orderedlist>
+<listitem>
+<para>
+<emphasis>Kicktart a Rocks VM Appliance</emphasis>. In Rocks any appliance can be built
+as a virtual machine.  EC2 supports only single ethernet interface appliances. On Local Cluster. About 10-15 minutes.
+</para>
+</listitem>
+
+<listitem>
+<para>
+<emphasis>Bundle the Rocks-created VM image using Amazon Tools</emphasis>. Amazon stores disk images using their own segmented, compressed and encrypted format.  Each segment is a maximum of 10MB. The EC2 roll provides a Rocks command to complete this step. On Local Cluster. About 10-20 minutes depending on size of software.
+</para>
+</listitem>
+
+<listitem>
+<para>
+<emphasis>Upload the bundle into Amazon S3</emphasis>. Rocks EC2 provides a single command to upload a bundled image into S3. Transfer from Local to Amazon. 15-60 Minutes depending on size of image and connection to Amazon.
+</para>
+</listitem>
+
+<listitem>
+<para>
+<emphasis>Register an uploaded bundle as an Amazon Machine Image (AMI)</emphasis>. 
+this is a single ec2-supplied command. Can also be accomplished using Amazon's web portal. 
+</para>
+</listitem>
+
+<listitem>
+<para>
+<emphasis>Boot the AMI in Amazon</emphasis>.  This is through a single ec2-supplied command. Can also be accomplished using Amazon's web portal.
+this is a single ec2-supplied command. Can also be accomplished using Amazon's web portal. 10-15 Minutes from submit to running. Dependent on Amazon internals. 
+</para>
+</listitem>
+</orderedlist>
+
+<para>
+The next sections give an example of how to practically accomplish the above.
+</para>
+
+</section>
+
+</chapter>

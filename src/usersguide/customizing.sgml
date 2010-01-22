@@ -1,0 +1,112 @@
+<chapter id="customizing" xreflabel="Customizing the Condor Roll">
+
+
+<title>Customizing the Condor Roll</title>
+
+<section id="customizing-condor" xreflabel="Customizing Condor">
+<title>Customizing the Condor Roll</title>
+
+<para>
+
+This section describes the default Condor configuration and some simple
+cusomizations that can be applied in Rocks 5.2
+</para>
+
+<para>
+By default, Condor execution daemons are only installed on Rocks
+<emphasis>compute</emphasis> appliances. For Rocks 5.2 and newer, the Condor
+roll makes use of attributes to enable Condor to be installed on any appliance.
+This may be particularly useful to groups who are including the Xen roll
+and would like Condor to install on VM Container appliances. 
+	
+The basic customizations that can be applied without and scripting/programming
+are as follows
+<itemizedlist>
+
+<listitem>
+<para>
+Condor_Client: Enable/Disable Condor Client Installation on any particular Appliance or Host
+</para>
+
+</listitem>
+
+<listitem>
+<para>
+Condor_Master: Redefine the Condor Master that nodes use
+</para>
+</listitem>
+
+<listitem>
+<para>
+Condor_MasterNetwork: Define which network interface that the master uses for Condor traffic
+</para>
+</listitem>
+
+<listitem>
+<para>
+Condor_ClientNetwork: Define which network interface that the master uses for Condor traffic
+</para>
+</listitem>
+
+</itemizedlist>
+
+</para>
+
+<para>
+The following are short examples of how to customize Condor using 
+Rocks commands.
+
+<itemizedlist>
+
+<listitem>
+<para>
+Enable Condor Client on all VM-Containers Appliances:
+<computeroutput>rocks add appliance attr vm-container Condor_Client true </computeroutput>
+</para>
+</listitem>
+
+<listitem>
+<para>
+Disable Condor on particular node:
+<computeroutput>rocks set host attr compute-0-0 Condor_Client false </computeroutput>
+</para>
+</listitem>
+
+
+<listitem>
+<para>
+Define a New Condor Master:
+<computeroutput>rocks set attr Condor_Master central-master.my.edu </computeroutput>
+</para>
+</listitem>
+
+
+</itemizedlist>
+
+</para>
+
+
+<para>
+The configuration of Condor is done during the install, the resulting 
+configuration files are located in /opt/condor/etc. To reconfigure a Condor 
+Pool Master on a Rocks Frontend, make appropriate attribute changes and then run
+<screen>
+# rocks sync condor
+</screen>
+</para>
+
+<para>
+For worker nodes, apply changes and then reinstall the worker nodes. 
+</para>
+
+<para>
+To find information about administrering and using Condor Pools
+please see the original Condor manual at <ulink
+url="http://www.cs.wisc.edu/condor/manual">Condor
+manuals</ulink>
+</para>
+
+</section>
+
+</chapter>
+
