@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.3 2009/06/09 22:45:29 phil Exp $
+# $Id: Makefile,v 1.4 2010/03/06 01:09:07 phil Exp $
 #
 # @Copyright@
 # 
@@ -54,6 +54,10 @@
 # @Copyright@
 #
 # $Log: Makefile,v $
+# Revision 1.4  2010/03/06 01:09:07  phil
+# Hack in threaded upload support. With 32 threads on landphil, upload goes from
+# 600KB/sec to 16MB/sec.
+#
 # Revision 1.3  2009/06/09 22:45:29  phil
 # Fixes. Create profile directories properly
 #
@@ -106,7 +110,7 @@ include Rules.mk
 
 build:
 	tar -zxf $(NAME)-$(DIREXT).$(TARBALL_POSTFIX)
-#	(cd patch-files && find . -type f | grep -v CVS | cpio -pduv ../)
+	(cd patch-files && find . -type f | grep -v CVS | cpio -pduv ../)
 	
 install::
 	mkdir -p $(ROOT)/$(PKGROOT)/$(NAME)
