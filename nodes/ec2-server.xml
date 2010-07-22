@@ -6,6 +6,7 @@ EC2-compatible VMs
 </description>
 <package>ec2-kernel-www</package>
 <package>rocks-ec2-commands</package>
+<package>roll-ec2-usersguide</package>
 <post>
 /opt/rocks/bin/rocks add attr ec2_kernel value=None
 /opt/rocks/bin/rocks add attr ec2_kernelTar value=None
