@@ -73,6 +73,7 @@ Add and build a virtual development appliance
 # rocks add host vm vm-container-0-0 membership="Development Appliance"
 added VM devel-server-0-0-0 on physical node vm-container-0-0
 # rocks set host boot action=install devel-server-0-0-0
+# rocks set host attr ec2_enable true
 # rocks start host devel-server-0-0-0
 </screen>
 
@@ -192,6 +193,13 @@ RESERVATION     r-6cee7f04      572535418485    default
 INSTANCE        i-7c516914      ami-6b608d08    ec2-67-202-16-68.compute-1.amazonaws.com        domU-12-31-39-09-BC-82.compute-1.internal  running phil-aws        0               m1.large        2010-01-19T19:01:38+0000   us-east-1b      aki-9800e5f1                    monitoring-disabled
 </screen>
 </para>
+
+<tip>
+<para> EC2 start up is 100% reliable  sometimes fail with "pending" changing to "terminated." 
+If an image fails to boot properly, simply try again. If the problem persists, try re-uploading (<computeroutput> rocks upload ec2 bundle</computeroutput>) the bundled image to a new S3 bucket. Register the newly uploaded bundle  to create a new AMI and try again.
+</para>
+</tip>
+
 </listitem>
 
 
