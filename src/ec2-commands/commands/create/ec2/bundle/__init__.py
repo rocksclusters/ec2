@@ -1,8 +1,11 @@
-# $Id: __init__.py,v 1.2 2010/01/19 06:38:38 phil Exp $
+# $Id: __init__.py,v 1.3 2010/07/27 00:04:39 phil Exp $
 #
 # Luca Clementi clem@sdsc.edu
 #
 # $Log: __init__.py,v $
+# Revision 1.3  2010/07/27 00:04:39  phil
+# Modified call to rocks run host. Cleaned up a bit. 5.3 compat changes
+#
 # Revision 1.2  2010/01/19 06:38:38  phil
 # create and upload commands are now working.
 #
@@ -161,7 +164,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.create.comman
         output = self.command('run.host', [physhost,
                 "mkdir -p /mnt/rocksimage"])
         if len(output) > 1:
-            self.abort('Problem with making the direcotry /mnt/rocksimage ' +
+            self.abort('Problem with making the directory /mnt/rocksimage ' +
                 'on host ' + physhost + '. Error: ' + output)
 
         output = self.command('run.host', [physhost,
@@ -175,7 +178,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.create.comman
         if len(output) > 1:
             #trying to unmount
             self.command('run.host', [physhost, "umount /mnt/rocksimage"])
-            self.abort('Problem with making the direcotry /mnt/rocksimage/mnt/ec2image ' +
+            self.abort('Problem with making the directory /mnt/rocksimage/mnt/ec2image ' +
                 'on host ' + physhost + '. Error: ' + output)
 
         output = self.command('run.host', [physhost,
@@ -199,9 +202,10 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.create.comman
         #toremove the password
         #"sed -i -e 's/root:[^:]\{1,\}:/root:!:/' /etc/shadow"
         output = self.command('run.host', [physhost, 
-            "sed -i -e 's/root:[^:]\{1,\}:/root:!:/' /mnt/rocksimage/etc/shadow"])
+            "command=\"sed -i --expression='s/root:[^:]\{1,\}:/root:\!:/' /mnt/rocksimage/etc/shadow\""])
         if len(output) > 1:
             #aborting
+	    print "Error output on removing password '%s'" % output
             self.terminate(physhost)
             self.abort('Problem removing root password. Error: ' + output)
 
@@ -214,14 +218,12 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.create.comman
         retval = os.system('scp -qr %s %s:/mnt/rocksimage/mnt/ec2image/script.sh ' % (scriptTemp, physhost))
         if retval != 0:
             self.terminate(physhost)
-            self.abort('Could not copy the scprit to the host: ' + physhost )
+            self.abort('Could not copy the script to the host: ' + physhost )
 
         # -----------------------     run the script
         #execute it with 'chroot /mnt/rocksimage/ /mnt/ec2image/script.sh rocksdevel'
         print "Running the bundle script this step might take around 10-20 minutes"
-        output = self.command('run.host', [physhost,
-            "chroot /mnt/rocksimage /mnt/ec2image/script.sh %s" % imagename])
-        print output
+        output = os.system( 'ssh %s "chroot /mnt/rocksimage /mnt/ec2image/script.sh %s"' % (physhost, imagename))
         #I don't know how to detect if the bundle script went well or not...
         #print "Bundle created sucessfully in: " + outputpath
         self.terminate(physhost)
@@ -275,6 +277,5 @@ echo bundling...
         if len(output) > 1:
             self.abort('Problem mounting /mnt/rocksimage on host ' +
                 physhost + '. Error: ' + output)
-
 
 RollName = "ec2"
