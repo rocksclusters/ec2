@@ -11,6 +11,8 @@ aki-9800e5f1 (64 bit)
 
 
 As of 10 Aug 2010
+Version 1.4 (No vmlinuz in these images)
+
 http://s3.amazonaws.com/ec2-downloads/ec2-modules-2.6.18-xenU-ec2-v1.4-x86_64.tgz
 http://s3.amazonaws.com/ec2-downloads/ec2-modules-2.6.18-xenU-ec2-v1.4-i686.tgz
 
@@ -21,3 +23,11 @@ aki-5642a03f (32-bit)
 aki-2a42a043 (64-bit)
 
 
+Version 1.2
+http://s3.amazonaws.com/ec2-downloads/ec2-modules-2.6.18-xenU-ec2-v1.2-x86_64.tgz
+http://s3.amazonaws.com/ec2-downloads/ec2-modules-2.6.18-xenU-ec2-v1.2-i686.tgz
+IMAGE	aki-f5c1219c	ec2-public-images/vmlinuz-2.6.18-xenU-ec2-v1.2.i386.aki.manifest.xml	amazon	available	public		i386	kernel		
+IMAGE	aki-e5c1218c	ec2-public-images/vmlinuz-2.6.18-xenU-ec2-v1.2.x86_64.aki.manifest.xml	amazon	available	public		x86_64	kernel		
+
+aki-f5c1219c (32-bit)
+aki-e5c1218c (64-bit)
