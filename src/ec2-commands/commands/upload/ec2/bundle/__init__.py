@@ -1,10 +1,13 @@
-# $Id: __init__.py,v 1.3 2010/01/19 06:38:38 phil Exp $
+# $Id: __init__.py,v 1.4 2010/09/02 23:26:49 phil Exp $
 #
 # Philip Papadopoulos - ppapadopoulos@ucsd.edu
 # many thanks to: 
 # Luca Clementi clem@sdsc.edu
 #
 # $Log: __init__.py,v $
+# Revision 1.4  2010/09/02 23:26:49  phil
+# Compat with 5.4 run.host
+#
 # Revision 1.3  2010/01/19 06:38:38  phil
 # create and upload commands are now working.
 #
@@ -149,7 +152,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
 	        print "Running the upload script this step may take 30-60 minutes"
 	        print "  depending on your connection to S3"
 	        output = self.command('run.host', [physhost,
-	            "%s/upload-script.sh" % outputpath])
+	            "%s/upload-script.sh" % outputpath, 'collate=true'])
 	        print output
 	
 	        #I don't know how to detect if the upload script went well or not...
@@ -170,3 +173,5 @@ echo uploading ...
 		file.close()
 		os.chmod(temp, stat.S_IRWXU)
 		return temp
+
+RollName = "ec2"

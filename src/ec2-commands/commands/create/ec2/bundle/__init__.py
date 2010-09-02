@@ -1,8 +1,11 @@
-# $Id: __init__.py,v 1.3 2010/07/27 00:04:39 phil Exp $
+# $Id: __init__.py,v 1.4 2010/09/02 23:26:49 phil Exp $
 #
 # Luca Clementi clem@sdsc.edu
 #
 # $Log: __init__.py,v $
+# Revision 1.4  2010/09/02 23:26:49  phil
+# Compat with 5.4 run.host
+#
 # Revision 1.3  2010/07/27 00:04:39  phil
 # Modified call to rocks run host. Cleaned up a bit. 5.3 compat changes
 #
@@ -112,8 +115,9 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.create.comman
         #ok we have to bunble the vm host runnning on physhost
         #
         #let's check that the machine is not running
-        output = self.command('run.host', [physhost,
-            '/usr/sbin/xm list | grep %s' % host ] )
+	print 'physhost is %s; host is %s'  %  (physhost,host)
+        output = self.command('run.host', [ physhost,
+            '/usr/sbin/xm list | grep %s' % host, 'collate=true' ] )
 
         if len(output) > 1 :
             self.abort("The vm " + host + " is still running (" + output + 
@@ -140,9 +144,9 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.create.comman
         # -------------------      clear the outputpath and mkdir if it doesn't exist
         print "Creating output directories"
         output = self.command('run.host', [physhost,
-                            'rm -rf %s' % outputpath ] )
+                            'rm -rf %s' % outputpath, 'collate=true' ] )
         output = self.command('run.host', [physhost,
-                            'mkdir -p %s' % outputpath ] )
+                            'mkdir -p %s' % outputpath, 'collate=true' ] )
         if len(output) > 1:
             self.abort('We can not create the directory ' + outputpath 
                 + 'please check that is not mounted or used')
@@ -162,19 +166,19 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.create.comman
         
         
         output = self.command('run.host', [physhost,
-                "mkdir -p /mnt/rocksimage"])
+                "mkdir -p /mnt/rocksimage", 'collate=true'])
         if len(output) > 1:
             self.abort('Problem with making the directory /mnt/rocksimage ' +
                 'on host ' + physhost + '. Error: ' + output)
 
         output = self.command('run.host', [physhost,
-                "lomount -diskimage %s -partition 1 /mnt/rocksimage" % diskVM])
+                "lomount -diskimage %s -partition 1 /mnt/rocksimage" % diskVM, 'collate=true'])
         if len(output) > 1:
             self.abort('Problem mounting ' + diskVM + ' on host ' + 
                 physhost + '. Error: ' + output)
 
         output = self.command('run.host', [physhost,
-                "mkdir -p /mnt/rocksimage/mnt/ec2image"])
+                "mkdir -p /mnt/rocksimage/mnt/ec2image", 'collate=true'])
         if len(output) > 1:
             #trying to unmount
             self.command('run.host', [physhost, "umount /mnt/rocksimage"])
@@ -185,7 +189,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.create.comman
                 "mount --bind %s /mnt/rocksimage/mnt/ec2image" % outputpath])
         if len(output) > 1:
             #trying to unmount
-            self.command('run.host', [physhost, "umount /mnt/rocksimage"])
+            self.command('run.host', [physhost, "umount /mnt/rocksimage",'collate=true'])
             self.abort('Problem mounting /mnt/rocksimage on host ' +
                 physhost + '. Error: ' + output)
 
@@ -202,7 +206,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.create.comman
         #toremove the password
         #"sed -i -e 's/root:[^:]\{1,\}:/root:!:/' /etc/shadow"
         output = self.command('run.host', [physhost, 
-            "command=\"sed -i --expression='s/root:[^:]\{1,\}:/root:\!:/' /mnt/rocksimage/etc/shadow\""])
+            "command=\"sed -i --expression='s/root:[^:]\{1,\}:/root:\!:/' /mnt/rocksimage/etc/shadow\"",'collate=true'])
         if len(output) > 1:
             #aborting
 	    print "Error output on removing password '%s'" % output
@@ -269,13 +273,15 @@ echo bundling...
 
     def terminate(self, physhost):
         #unmounting the file systems
-        output = self.command('run.host', [physhost, "umount /mnt/rocksimage/mnt/ec2image"])
+        output = self.command('run.host', [physhost, "umount /mnt/rocksimage/mnt/ec2image", 'collate=true'])
         if len(output) > 1:
             self.abort('Problem mounting /mnt/rocksimage/mnt/ec2image on host ' +
                 physhost + '. Error: ' + output)
-        output = self.command('run.host', [physhost, "umount /mnt/rocksimage"])
+        output = self.command('run.host', [physhost, "umount /mnt/rocksimage",'collate=true'])
         if len(output) > 1:
             self.abort('Problem mounting /mnt/rocksimage on host ' +
                 physhost + '. Error: ' + output)
+
+RollName = "ec2"
 
 RollName = "ec2"
