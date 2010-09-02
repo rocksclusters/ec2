@@ -228,9 +228,9 @@ def main
     # Upload AMI bundle parts.
     STDOUT.puts "Uploading bundled image parts to #{s3_url}/#{p.bucket} ..."
     manifest = REXML::Document.new(xml)
-## ROCKS Hack in Threaded Upload. Statically Set to 32. 
+## ROCKS Hack in Threaded Upload. Statically Set to 4. 
     curThread = 0
-    maxThreads = 32
+    maxThreads = 4
     threadComplete = [nil,nil]
     url=[nil,nil]
     tpart_info=[nil,nil]
