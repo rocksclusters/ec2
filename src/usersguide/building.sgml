@@ -130,24 +130,28 @@ ec2-bundle-vol complete
 uploaded into Amazon's S3 (Simple Storage Service).  You must choose an S3 bucket name into
 which the bundled parts are stored.
 <screen>
-# rocks upload ec2 bundle devel-server-0-0-0 myTest imagename=devel-server-0-0-0 
+# rocks upload ec2 bundle devel-server-0-0-0 s3bucket=my-test imagename=devel-server-0-0-0 
 Copying credential directory
 Creating the script
 Running the upload script. this step may take 30-60 minutes
 depending on your connection to S3
 uploading ....
-Uploading bundle image parts to https://s3.amazonaws.com:443/myTest ...
-Uploaded devel-server-0-0-0.part.000 to https://s3.amazonaws.com:443/myTest/devel-server-0-0-0.part000. 
-Uploaded devel-server-0-0-0.part.001 to https://s3.amazonaws.com:443/myTest/devel-server-0-0-0.part001. 
+Uploading bundle image parts to https://s3.amazonaws.com:443/my-test ...
+Uploaded devel-server-0-0-0.part.000 to https://s3.amazonaws.com:443/my-test/devel-server-0-0-0.part000. 
+Uploaded devel-server-0-0-0.part.001 to https://s3.amazonaws.com:443/my-test/devel-server-0-0-0.part001. 
 .
 .
 .
-Uploaded devel-server-0-0-0.part.100 to https://s3.amazonaws.com:443/myTest/devel-server-0-0-0.part100. 
+Uploaded devel-server-0-0-0.part.100 to https://s3.amazonaws.com:443/my-test/devel-server-0-0-0.part100. 
 Uploading manifest ...
-Uploaded manifest to https://s3.amazonaws.com:443/myTest/devel-server-0-0-0.manifest.xml 
+Uploaded manifest to https://s3.amazonaws.com:443/my-test/devel-server-0-0-0.manifest.xml 
 Bundle upload completed..
 </screen>
 </para>
+<tip>
+<para> S3 bucket names must be all lower case. See S3 documentation. 
+</para>
+</tip>
 <tip>
 <para> S3 uploads are not 100% reliable. If the upload fails, simply re-run the 
 <computeroutput> rocks upload ec2 bundle</computeroutput> command.
@@ -161,7 +165,7 @@ AMI. You must use this in thee next step
 <screen>
 export EC2_PRIVATE_KEY=/root/.ec2/pk.pem
 export EC2_CERT=/root/.ec2/cert.pem 
-# ec2-register myTest/devel-server-0-0-0.manifest.xml
+# ec2-register my-test/devel-server-0-0-0.manifest.xml -n "rocks test server"
 IMAGE   ami-6b608d08
 </screen>
 </para>

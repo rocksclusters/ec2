@@ -1,10 +1,13 @@
-# $Id: __init__.py,v 1.4 2010/09/02 23:26:49 phil Exp $
+# $Id: __init__.py,v 1.5 2010/09/03 23:28:12 phil Exp $
 #
 # Philip Papadopoulos - ppapadopoulos@ucsd.edu
 # many thanks to: 
 # Luca Clementi clem@sdsc.edu
 #
 # $Log: __init__.py,v $
+# Revision 1.5  2010/09/03 23:28:12  phil
+# New API tools. Adjust docs to match
+#
 # Revision 1.4  2010/09/02 23:26:49  phil
 # Compat with 5.4 run.host
 #
@@ -165,7 +168,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
 	        script = """#!/bin/bash
 export EC2_HOME=/opt/ec2
 echo uploading ...
-/opt/ec2/bin/ec2-upload-bundle -b %s -m %s -a `cat %s` -s `cat %s`""" % (bundle,manifest,awsid,secretkeyfile)
+/opt/ec2/bin/ec2-upload-bundle --retry -b %s -m %s -a `cat %s` -s `cat %s`""" % (bundle,manifest,awsid,secretkeyfile)
 		import tempfile
 		temp = tempfile.mktemp()
 		file = open(temp, 'w')
