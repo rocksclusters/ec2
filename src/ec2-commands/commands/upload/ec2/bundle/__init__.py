@@ -1,10 +1,13 @@
-# $Id: __init__.py,v 1.5 2010/09/03 23:28:12 phil Exp $
+# $Id: __init__.py,v 1.6 2010/09/04 04:03:30 phil Exp $
 #
 # Philip Papadopoulos - ppapadopoulos@ucsd.edu
 # many thanks to: 
 # Luca Clementi clem@sdsc.edu
 #
 # $Log: __init__.py,v $
+# Revision 1.6  2010/09/04 04:03:30  phil
+# Add location so we can upload to different EC2 regions.
+#
 # Revision 1.5  2010/09/03 23:28:12  phil
 # New API tools. Adjust docs to match
 #
@@ -69,14 +72,19 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
         /state/partition1/ec2/bundles/devel-server-0-0-0
         </param>
 
+       	<param type='string' name='location'>
+	S3 location. Valid entries are:  EU,US,us-west-1,ap-southeast-1
+	default is US.
+        </param>
+
        	<param type='string' name='imagename'>
         The name that was given to the image using rocks create ec2 bundle, if not 
 	specified default is image
         </param>
 
-        <example cmd='upload ec2 bundle devel-server-0-0-0 s3bucket=rocksVM'>
+        <example cmd='upload ec2 bundle devel-server-0-0-0 s3bucket=rocks-vm'>
         This will upload the bundle of devel-server-0-0-0 and upload it to the s3 bucket
-        called rocksVM. It uses credential information found in /root/.ec2 
+        called rocks-vm. It uses credential information found in /root/.ec2 
         </example>
 	"""
 
@@ -90,10 +98,11 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
 	        else:
 	            host = hosts[0]
 	
-	        (credentialDir, outputpath, imagename) = self.fillParams( 
+	        (credentialDir, outputpath, imagename, location) = self.fillParams( 
 	                    [('credentialdir','~/.ec2'), 
 	                    ('outputpath', ) ,
-	                    ('imagename', 'image')
+	                    ('imagename', 'image'),
+	                    ('location', 'US')
 	                    ] )
 			
 	        #
@@ -145,7 +154,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
 		manifest=outputpath + "/%s.manifest.xml" % imagename 
 		awsid = outputpath + "/.ec2/access-key" 
 		secretkey = outputpath + "/.ec2/access-key-secret" 
-	        scriptTemp = self.createScript(bucket,manifest,awsid,secretkey)
+	        scriptTemp = self.createScript(location,bucket,manifest,awsid,secretkey)
 	        retval = os.system('scp -qr %s %s:%s/upload-script.sh ' % (scriptTemp, physhost,outputpath))
 	        if retval != 0:
 	            self.abort('Could not copy the script to the host: ' + physhost )
@@ -162,13 +171,13 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
 	        #print "Bundle created sucessfully in: " + outputpath
 	
 	
-	def createScript(self, bundle, manifest, awsid, secretkeyfile ):
+	def createScript(self, location, bucket, manifest, awsid, secretkeyfile):
 	        """this function create the script to upload the VM"""
 	        outputFile = ""
 	        script = """#!/bin/bash
 export EC2_HOME=/opt/ec2
 echo uploading ...
-/opt/ec2/bin/ec2-upload-bundle --retry -b %s -m %s -a `cat %s` -s `cat %s`""" % (bundle,manifest,awsid,secretkeyfile)
+/opt/ec2/bin/ec2-upload-bundle --retry --location %s -b %s -m %s -a `cat %s` -s `cat %s`""" % (location, bucket, manifest, awsid, secretkeyfile)
 		import tempfile
 		temp = tempfile.mktemp()
 		file = open(temp, 'w')
