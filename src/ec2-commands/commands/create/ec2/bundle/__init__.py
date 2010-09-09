@@ -1,8 +1,11 @@
-# $Id: __init__.py,v 1.4 2010/09/02 23:26:49 phil Exp $
+# $Id: __init__.py,v 1.5 2010/09/09 17:04:05 phil Exp $
 #
 # Luca Clementi clem@sdsc.edu
 #
 # $Log: __init__.py,v $
+# Revision 1.5  2010/09/09 17:04:05  phil
+# EC2 changed behaviour now have to explictly tell it to generate a valid fstab.
+#
 # Revision 1.4  2010/09/02 23:26:49  phil
 # Compat with 5.4 run.host
 #
@@ -258,7 +261,7 @@ MAKEDEV urandom
 export EC2_HOME=/opt/ec2
 
 echo bundling...
-/opt/ec2/bin/ec2-bundle-vol -d /mnt/ec2image/ -e /mnt/ec2image -c /mnt/ec2image/.ec2/cert.pem -k /mnt/ec2image/.ec2/pk.pem -u `cat /mnt/ec2image/.ec2/user` $IMAGENAME --arch %s --no-inherit --kernel %s 
+/opt/ec2/bin/ec2-bundle-vol -d /mnt/ec2image/ -e /mnt/ec2image -c /mnt/ec2image/.ec2/cert.pem -k /mnt/ec2image/.ec2/pk.pem -u `cat /mnt/ec2image/.ec2/user` $IMAGENAME --arch %s --no-inherit --generate-fstab --kernel %s 
 
         """ % (arch,aki)
 
