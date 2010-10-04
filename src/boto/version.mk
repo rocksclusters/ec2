@@ -1,0 +1,7 @@
+PKGROOT		= /opt/rocks
+NAME    	= boto
+VERSION 	= 2.0b2
+RELEASE 	= 1
+HASHNAME	= hashlib
+HASHVERSION	= 20081119
+TARBALL_POSTFIX	= tar.gz
