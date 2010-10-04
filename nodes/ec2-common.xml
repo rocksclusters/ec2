@@ -7,11 +7,13 @@
 Install packages needed For EC2 Packages. Install on Frontend and on Devel Server
 </description>
 
+<package>boto</package> 
 <package>ec2-ami-tools</package> 
 <package>ec2-api-tools</package> 
 <package>ruby</package>
 <package>ruby-libs</package>
 <package>ruby-docs</package>
+<package>vtun</package>
 
 </kickstart> 
 

@@ -7,6 +7,7 @@ EC2-compatible VMs
 <package>ec2-kernel-www</package>
 <package>rocks-ec2-commands</package>
 <package>roll-ec2-usersguide</package>
+<package>flex</package>
 <post>
 /opt/rocks/bin/rocks add attr ec2_kernel value=None
 /opt/rocks/bin/rocks add attr ec2_kernelTar value=None
@@ -14,6 +15,11 @@ EC2-compatible VMs
 /opt/rocks/bin/rocks add attr ec2_initrd value=None
 /opt/rocks/bin/rocks add attr ec2_aki_i386 value=None
 /opt/rocks/bin/rocks add attr ec2_aki_x86_64 value=None
+
+# Add the ec2-dynamic appliance type. This is a convenient moniker to
+# do special things to appliances running in ec2
+/opt/rocks/bin/rocks add appliance ec2-dynamic membership="EC2 Dynamic Host" compute=no public=yes
+/opt/rocks/bin/rocks add appliance attr ec2-dynamic managed value=true
 
 # Enable ec2 by default for the devel-server appliance
 /opt/rocks/bin/rocks add appliance attr devel-server ec2_enable value=true
