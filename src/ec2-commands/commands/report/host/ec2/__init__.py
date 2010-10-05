@@ -1,4 +1,4 @@
-#$Id: __init__.py,v 1.1 2010/10/05 02:02:37 phil Exp $
+#$Id: __init__.py,v 1.2 2010/10/05 20:21:55 phil Exp $
 # 
 # @Copyright@
 # 
@@ -54,6 +54,9 @@
 # @Copyright@
 #
 # $Log: __init__.py,v $
+# Revision 1.2  2010/10/05 20:21:55  phil
+# Only report running instances with public IP addresses
+#
 # Revision 1.1  2010/10/05 02:02:37  phil
 # List running instances, public and private IP addresses in EC2
 #
@@ -125,8 +128,8 @@ class Command( rocks.commands.report.command):
 		self.beginOutput()
 		for r in ec2.get_all_instances():
     			for i in r.instances:
-				pubip = socket.gethostbyaddr(i.public_dns_name)[-1][0]
-
-        			self.addOutput("","%s,%s,%s,%s,%s" % (i.id,i.public_dns_name, pubip,i.private_dns_name, i.private_ip_address))
+				if len(i.public_dns_name) > 1:
+					pubip = socket.gethostbyaddr(i.public_dns_name)[-1][0]
+        				self.addOutput("","%s,%s,%s,%s,%s" % (i.id,i.public_dns_name, pubip,i.private_dns_name, i.private_ip_address))
 
 		self.endOutput(padChar = '')
