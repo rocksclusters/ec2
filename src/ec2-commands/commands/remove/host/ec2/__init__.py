@@ -1,4 +1,4 @@
-# $Id: __init__.py,v 1.1 2010/10/05 18:57:31 phil Exp $
+# $Id: __init__.py,v 1.2 2010/10/05 21:46:05 phil Exp $
 #
 # @Copyright@
 # 
@@ -54,6 +54,9 @@
 # @Copyright@
 #
 # $Log: __init__.py,v $
+# Revision 1.2  2010/10/05 21:46:05  phil
+# Clean up getting IP addresses.
+#
 # Revision 1.1  2010/10/05 18:57:31  phil
 # Remove hosts that are in the DB but not running in EC2.
 #
@@ -90,20 +93,10 @@ class Command(command):
 		self.verbose, = self.fillParams([('verbose','yes'),])
 
 		# Get just the IP addresses of ec2-dynamic appliances that are listed in the database
-		callargs=['ec2-dynamic', 'output-header=no']
-		ifaces = self.command('list.host.interface', callargs).rstrip()
+		rows = self.db.execute("""select net.ip from networks net, memberships m, nodes n  where net.Node = n.ID and n.membership=m.ID  and m.name="EC2 Dynamic Host" and net.Device="eth0" """)
 		inDB = []
-		for iface in ifaces.splitlines():
-			fields=iface.rsplit(' ')
-			if re.search(':', fields[0]):
-				ip = fields[4]
-				device=fields[2]
-			else:
-				ip = fields[3]
-				device=fields[1]
-
-			if device == 'eth0' and len(ip) > 0:
-				inDB.append((ip,'DB'))
+		for row,  in self.db.fetchall():
+			inDB.append((row,'DB'))
 
 
 		# Get just the IP addresses of EC2 that are running  right now
@@ -118,6 +111,7 @@ class Command(command):
 		removeHosts = []
 		allIPs = inEC2 + inDB
 		allIPs.sort()
+		print allIPs
 		
 		# Walk through list and determine who should be removed
 		testIndex = 0
