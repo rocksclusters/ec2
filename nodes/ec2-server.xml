@@ -32,7 +32,8 @@ EC2-compatible VMs
 
 
 # Create some networking holders. These are just netmasks. but useful
-/opt/rocks/bin/rocks add network ec2private 0.0.0.0 netmask=255.255.254.0 mtu=1500
+/opt/rocks/bin/rocks add network ec2public 0.0.0.0 netmask=255.255.255.255 mtu=1500 dnszone=compute-1.amazonaws.com servedns=false
+/opt/rocks/bin/rocks add network ec2private 0.0.0.0 netmask=255.255.254.0 mtu=1500 servedns=false
 /opt/rocks/bin/rocks add network ec2tunnel 0.0.0.0 netmask=255.255.255.252 mtu=1500
 
 # Now populate the ec2 attrs based on the kernel in ec2-kernel-www package.  
