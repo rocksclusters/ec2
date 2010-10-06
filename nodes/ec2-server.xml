@@ -21,11 +21,14 @@ EC2-compatible VMs
 /opt/rocks/bin/rocks add appliance ec2-dynamic membership="EC2 Dynamic Host" compute=no public=yes
 /opt/rocks/bin/rocks add appliance attr ec2-dynamic managed value=true
 /opt/rocks/bin/rocks add appliance attr ec2-dynamic os value=linux
+/opt/rocks/bin/rocks add appliance attr ec2-dynamic primary_net value=ec2private
 
 # Override the global default route. This is for the case of 
 # rocks sync host network ec2-dynamic, the DHCP'ed default route remains
 
 /opt/rocks/bin/rocks add appliance route ec2-dynamic 0.0.0.0 netmask=255.255.255.255 &Kickstart_PrivateAddress; 
+/opt/rocks/bin/rocks add appliance route ec2-dynamic 224.0.0.0 netmask=255.255.255.0 ec2tunnel
+/opt/rocks/bin/rocks add appliance route ec2-dynamic 255.255.255.255 netmask=255.255.255.255 ec2private
 
 # Enable ec2 by default for the devel-server appliance
 /opt/rocks/bin/rocks add appliance attr devel-server ec2_enable value=true
