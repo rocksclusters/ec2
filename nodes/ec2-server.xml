@@ -20,9 +20,20 @@ EC2-compatible VMs
 # do special things to appliances running in ec2
 /opt/rocks/bin/rocks add appliance ec2-dynamic membership="EC2 Dynamic Host" compute=no public=yes
 /opt/rocks/bin/rocks add appliance attr ec2-dynamic managed value=true
+/opt/rocks/bin/rocks add appliance attr ec2-dynamic os value=linux
+
+# Override the global default route. This is for the case of 
+# rocks sync host network ec2-dynamic, the DHCP'ed default route remains
+
+/opt/rocks/bin/rocks add appliance route ec2-dynamic 0.0.0.0 netmask=255.255.255.255 &Kickstart_PrivateAddress; 
 
 # Enable ec2 by default for the devel-server appliance
 /opt/rocks/bin/rocks add appliance attr devel-server ec2_enable value=true
+
+
+# Create some networking holders. These are just netmasks. but useful
+/opt/rocks/bin/rocks add network ec2private 0.0.0.0 netmask=255.255.254.0 mtu=1500
+/opt/rocks/bin/rocks add network ec2tunnel 0.0.0.0 netmask=255.255.255.252 mtu=1500
 
 # Now populate the ec2 attrs based on the kernel in ec2-kernel-www package.  
 # the following scripts is built by th ec2-kernel-www package
