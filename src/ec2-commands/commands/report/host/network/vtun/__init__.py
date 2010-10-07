@@ -1,4 +1,4 @@
-# $Id: __init__.py,v 1.1 2010/10/07 21:58:54 phil Exp $
+# $Id: __init__.py,v 1.2 2010/10/07 22:47:49 phil Exp $
 # 
 # @Copyright@
 # 
@@ -54,8 +54,9 @@
 # @Copyright@
 #
 # $Log: __init__.py,v $
-# Revision 1.1  2010/10/07 21:58:54  phil
-# About 3/4 done. Checkpoint.
+# Revision 1.2  2010/10/07 22:47:49  phil
+#
+# Server side config looks good.
 #
 #
 #
@@ -81,7 +82,7 @@ class Command(rocks.commands.HostArgumentProcessor,
 		commonHeader = """
 options {
   port 6161;		    # ASCII for '==' Listen on this port.
-  bindaddr { iface %s; };   # Listen only on loopback device.
+  bindaddr { iface %s; };   # Listen only on specific device.
 
   # Syslog facility
   syslog 	daemon;
@@ -103,7 +104,11 @@ default {
 """
 		self.addOutput(host, '<file name="/opt/vtun/etc/vtund.conf">')
 		self.addOutput(host, '<![CDATA[>')
-		self.db.execute("select net.device from networks net, nodes n, subnets s where n.name='%s' and n.id=net.node and net.subnet=s.id and s.id='%s'" % ( host, "public"))
+		netname = self.db.getHostAttr(host,'vtunListenNet')
+		if netname is None:
+			netname = "public"
+
+		self.db.execute("select net.device from networks net, nodes n, subnets s where n.name='%s' and n.id=net.node and net.subnet=s.id and s.name='%s'" % ( host, netname))
 		try:
 			binddev,=self.db.fetchone()		 
 		except:
@@ -148,7 +153,7 @@ default {
 	# Connection is Up 
 
 	# %s - local, %s  - remote 
-	ifconfig "%% %s pointopoint %s mtu %d";
+	ifconfig "%%%% %s pointopoint %s mtu %d";
   };
 }
 """ % (client,client,ip,clientip,ip,clientip,mtu)
