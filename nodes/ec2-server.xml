@@ -23,6 +23,14 @@ EC2-compatible VMs
 /opt/rocks/bin/rocks add appliance attr ec2-dynamic os value=linux
 /opt/rocks/bin/rocks add appliance attr ec2-dynamic primary_net value=ec2private
 
+# Set up the default tunnel parameters, roles for clients and frontends
+/opt/rocks/bin/rocks add attr vtunListenPort value=6161
+/opt/rocks/bin/rocks add attr vtunServer value=Kickstart_PublicHostname;
+/opt/rocks/bin/rocks add appliance attr ec2-dynamic vtunRole value=client
+/opt/rocks/bin/rocks add appliance attr ec2-dynamic vtunListenNet value=ec2private
+/opt/rocks/bin/rocks add appliance attr frontend vtunListenNet value=public
+/opt/rocks/bin/rocks add appliance attr frontend vtunRole value=server
+
 # Override the global default route. This is for the case of 
 # rocks sync host network ec2-dynamic, the DHCP'ed default route remains
 
