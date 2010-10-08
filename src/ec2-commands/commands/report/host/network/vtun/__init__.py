@@ -1,4 +1,4 @@
-# $Id: __init__.py,v 1.2 2010/10/07 22:47:49 phil Exp $
+# $Id: __init__.py,v 1.3 2010/10/08 05:32:51 phil Exp $
 # 
 # @Copyright@
 # 
@@ -54,6 +54,10 @@
 # @Copyright@
 #
 # $Log: __init__.py,v $
+# Revision 1.3  2010/10/08 05:32:51  phil
+# Client side set up now complete.
+# TODO: Generate a password for a connection.
+#
 # Revision 1.2  2010/10/07 22:47:49  phil
 #
 # Server side config looks good.
@@ -81,7 +85,7 @@ class Command(rocks.commands.HostArgumentProcessor,
 	def writeCommonHeader(self, host):
 		commonHeader = """
 options {
-  port 6161;		    # ASCII for '==' Listen on this port.
+  port %d;		    # 6161 ASCII for '==' Listen on this port.
   bindaddr { iface %s; };   # Listen only on specific device.
 
   # Syslog facility
@@ -102,30 +106,77 @@ default {
   proto udp;   		# UDP protocol
 }
 """
-		self.addOutput(host, '<file name="/opt/vtun/etc/vtund.conf">')
-		self.addOutput(host, '<![CDATA[>')
 		netname = self.db.getHostAttr(host,'vtunListenNet')
+		port = self.db.getHostAttr(host,'vtunListenPort')
 		if netname is None:
 			netname = "public"
-
+		if port is None:
+			port =  6161   # '==' in ASCII
 		self.db.execute("select net.device from networks net, nodes n, subnets s where n.name='%s' and n.id=net.node and net.subnet=s.id and s.name='%s'" % ( host, netname))
 		try:
 			binddev,=self.db.fetchone()		 
 		except:
 			binddev = "eth0"
-		self.addOutput(host, commonHeader % binddev)
+		self.addOutput(host, '<file name="/opt/vtun/etc/vtund.conf">')
+		self.addOutput(host, '<![CDATA[')
+		self.addOutput(host, commonHeader % (port, binddev))
 		
 	def writeCommonTrailer(self, host):
-		self.addOutput(host, '</]]>')
+		self.addOutput(host, ']]>')
 		self.addOutput(host, '</file>')
 
 	def writeClientConfig(self, host):
-		pass
+		## Logic --
+		# IP, Mask, MTU info is read from the DB as per usual networks.
+		# VTUN server must name its tunnel interface to client as:
+		# 'vtun_client'.   
+		# this and the channel number is used to "bind" the connection
+		query = "select n.device,n.name,n.ip,s.netmask,n.channel,s.mtu from networks n, subnets s, nodes where nodes.name='%s' and n.node=nodes.id and n.subnet=s.id and s.name='ec2tunnel'" % host
+		self.db.execute(query)
+		try:
+			device,name,ip,netmask,channel,mtu = self.db.fetchone() 
+		except:
+			return
+
+		server=  'vtun_'+host
+		query2 = "select n.ip from networks n, subnets s, nodes where n.name='%s' and n.node=nodes.id and n.subnet=s.id and s.name='ec2tunnel' and n.channel='%s'"  % (server ,channel)
+		self.db.execute(query2)				
+		try:
+			serverip, = self.db.fetchone()
+		except:
+			serverip = None
+		cblock="""
+# Rocks-Generated: Session '%s'.
+%s {
+  passwd  Ma&^TU;	# Password
+  type  tun;		# IP tunnel 
+  device %s;		# Device 
+  proto udp;   		# UDP protocol
+  keepalive yes;	# Keep connection alive
+  up {
+	# Connection is Up 
+
+	# %s - local, %s  - remote 
+	ifconfig "%%%% %s pointopoint %s mtu %d";
+  };
+}
+""" % (host,host,device,ip,serverip,ip,serverip,mtu)
+
+		if serverip is not None:
+			self.addOutput(host, cblock)
 
 	def writeServerConfig(self, host):
+		## Logic --
+		# IP, Mask, MTU info is read from the DB as per usual networks.
+		# VTUN server must name its tunnel interface to client as:
+		# 'vtun_client'.   
+		# this and the channel number is used to "bind" the connection 
+		# to the client.
+
 		query = "select n.device,n.name,n.ip,s.netmask,n.channel,s.mtu from networks n, subnets s, nodes where nodes.name='%s' and n.node=nodes.id and n.subnet=s.id and s.name='ec2tunnel'" % host
 		self.db.execute(query)
 
+		# record all tunnels that this host is willing serve
 		serverData=[]
 		try:
 			for row in self.db.fetchall():
@@ -135,7 +186,9 @@ default {
 
 		for row in serverData:
 			device,name,ip,netmask,channel,mtu = row
-			tmp,client = name.split('tun_',1)
+			tmp,client = name.split('vtun_',1)
+			# find the ip address of the client side
+			# channels must match
 			query2 = "select n.ip from networks n, subnets s, nodes where nodes.name='%s' and n.node=nodes.id and n.subnet=s.id and s.name='ec2tunnel' and n.channel='%s'"  % (client ,channel)
 			self.db.execute(query2)				
 			try:
@@ -147,6 +200,7 @@ default {
 %s {
   passwd  Ma&^TU;	# Password
   type  tun;		# IP tunnel 
+  device %s;		# device to use
   proto udp;   		# UDP protocol
   keepalive yes;	# Keep connection alive
   up {
@@ -156,7 +210,7 @@ default {
 	ifconfig "%%%% %s pointopoint %s mtu %d";
   };
 }
-""" % (client,client,ip,clientip,ip,clientip,mtu)
+""" % (client,client,device,ip,clientip,ip,clientip,mtu)
 			
 			if clientip is not None:
 				self.addOutput(host, sblock)
