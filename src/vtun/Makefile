@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.1 2010/10/01 20:13:20 phil Exp $
+# $Id: Makefile,v 1.2 2010/10/08 20:54:36 phil Exp $
 #
 # @Copyright@
 # 
@@ -54,6 +54,9 @@
 # @Copyright@
 #
 # $Log: Makefile,v $
+# Revision 1.2  2010/10/08 20:54:36  phil
+# Add service startup script
+#
 # Revision 1.1  2010/10/01 20:13:20  phil
 # Easily set up generic IP tunnels.
 #
@@ -78,6 +81,11 @@ install::
 		cd $(NAME)-$(VERSION);				\
 		$(MAKE) prefix=$(ROOT)/$(PKGROOT)/$(NAME) install;\
 	)
+	mkdir -p $(ROOT)/etc/init.d
+	install -m 755 vtun.rc $(ROOT)/etc/init.d/vtun
+	mkdir -p $(ROOT)/etc/sysconfig
+	touch $(ROOT)/etc/sysconfig/vtun
+
 
 clean::
 	rm -rf $(NAME)-$(VERSION)

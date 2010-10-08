@@ -1,0 +1,118 @@
+#!/bin/bash
+#
+#	/etc/rc.d/init.d/vtun
+#
+# Starts the vtun daemon
+#
+# chkconfig: 345 80 20
+# description: Start the vtun daemon to assist in setting up pt-2-pt tunnels 
+# processname: vtund
+
+### BEGIN INIT INFO
+# Provides: vtund
+# Required-Start: $network 
+# Default-Start:  2 3 4 5
+# Default-Stop: 0 1 6
+# Short-Description: start and stop vtund 
+# Description: Vtun daemon to assist in setting up pt-2-pt tunnels 
+### END INIT INFO
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+RETVAL=0
+VTUNDSYSCONFIG=/etc/sysconfig/vtund
+VTUND=/opt/vtun/sbin/vtund
+VTUNMODE=server
+VTUNSERVER=
+VTUNPROFILE=
+# source the variables in /etc/sysconfig/vtund
+if [ -f $VTUNDSYSCONFIG ]; then
+	. $VTUNDSYSCONFIG
+fi
+ 
+check() {
+	# Check that we're a privileged user
+	[ `id -u` = 0 ] || exit 4
+	
+	# Check if vtund is executable
+	test -x $VTUND || exit 5
+}
+
+start() {
+
+	check 
+
+	if [ "$VTUNMODE" == "client" ]; then
+		vtargs="$VTUNPROFILE $VTUNSERVER"
+	else
+		vtargs="-s"
+	fi
+		
+	echo -n $"Starting vtund daemon: "	
+	daemon $VTUND $vtargs
+	RETVAL=$?
+	[ $RETVAL -eq 0 ] && touch /var/lock/subsys/vtund
+	echo
+	return $RETVAL
+}
+
+stop() {
+
+	check
+	
+	echo -n $"Stopping vtund daemon: "
+	killproc $VTUND
+	RETVAL=$?
+	[ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/vtund
+	echo
+    return $RETVAL
+}
+
+restart() {
+	stop
+	start
+}	
+
+reload() {
+
+	check
+	
+	trap "" SIGHUP
+	action $"Reloading vtund daemon:" killall -HUP vtund
+	RETVAL=$?
+	return $RETVAL
+}
+
+
+case "$1" in
+start)
+	start
+	;;
+stop)
+	stop
+	;;
+reload)
+	reload
+	;;
+force-reload)
+	restart
+	;;
+restart)
+	restart
+	;;
+condrestart)
+	if [ -f /var/lock/subsys/vtund ]; then
+	    restart
+	fi
+	;;
+status)
+	status vtund
+	RETVAL=$?
+	;;
+*)
+	echo $"Usage: $0 {start|stop|status|restart|condrestart|reload|force-reload}"
+	RETVAL=2
+esac
+
+exit $RETVAL
