@@ -1,4 +1,4 @@
-# $Id: __init__.py,v 1.1 2010/10/05 22:06:24 phil Exp $
+# $Id: __init__.py,v 1.2 2010/10/11 19:00:32 phil Exp $
 #
 # @Copyright@
 # 
@@ -54,6 +54,11 @@
 # @Copyright@
 #
 # $Log: __init__.py,v $
+# Revision 1.2  2010/10/11 19:00:32  phil
+# Checkpoint. Adds, interface, network, tunnel devices, firewall, routing for
+# a newly discovered ec2 host.
+# TODO: Testing, remove host logic, remove host plugin.
+#
 # Revision 1.1  2010/10/05 22:06:24  phil
 # Dynamically Add hosts to DB based on what is running
 #
@@ -97,6 +102,12 @@ class Command(command):
 	</example>
 	"""
 
+	def rocksCommand(self,command,callargs):
+		if self.verbose == 'yes':
+			print "%s: %s" % (command,callargs)
+		rval = self.command(command, callargs)
+		return rval
+
 	def addHost(self, ec2Host):
 		# see if the rank is unused
 		self.db.execute("""select rank from nodes n, memberships m where n.membership = m.id
@@ -115,22 +126,96 @@ class Command(command):
 		print self.rack, goodRank
 		nodename="%s-%s-%s" % (self.basename, self.rack, goodRank)
 		callargs=[nodename, 'membership=EC2 Dynamic Host',"cpus=1", "rack=%s" % self.rack, "rank=%s" % goodRank]
-		
-		if self.verbose == 'yes':
-			print "add host", callargs
-		self.command('add.host', callargs)
+		self.rocksCommand('add.host', callargs)
 
-		# Add Interfaces
+		####  Add Interfaces ####
 		# Should get the subnet from an appliance attribute
-		callargs=[nodename, 'eth0', 'subnet=private', 'ip=%s' % ec2Host[4], 'name=%s' % nodename]
-		if self.verbose == 'yes':
-			print "add host interface", callargs
-		self.command('add.host.interface', callargs)
+		# Private:
+		callargs=[nodename, 'eth0', 'subnet=ec2private', 'ip=%s' % ec2Host[4], 'name=%s' % nodename]
+		self.rocksCommand('add.host.interface', callargs)
 
+		callargs=[nodename, 'eth0', 'options=dhcp']
+		self.rocksCommand('set.host.interface.options', callargs)
+
+		# Public:
 		callargs=[nodename, 'pub0','ip=%s' % ec2Host[2], 'name=%s' % ec2Host[1].split('.',1)[0], 'subnet=ec2public']
-		if self.verbose == 'yes':
-			print "add host interface", callargs
-		self.command('add.host.interface', callargs)
+		self.rocksCommand('add.host.interface', callargs)
+		callargs=[nodename, 'pub0', 'options=noreport']
+		self.rocksCommand('set.host.interface.options', callargs)
+
+		## Tunnel Interfaces
+		# Steps:
+		#	1. Find a tun<n> device on frontend that is unused
+		#		set channel=<n>, start at 0
+		#	2. Create a tunnel network (4 addresses/30) for
+		#	   frontend <--> EC2 host routing. This is needed 
+		#	   for firewall rules
+		#	3. Add tun<n> device to both ec2 host and vtunnel server
+		#	4. Setup routing, forward and reverse for both
+		#	5. Setup firewall for both
+		# Tunnel:
+		# Find a free tunnel interface on the vtunServer
+		vtunServerFQDN=self.db.getHostAttr(nodename,'vtunServer')
+		vtunServer=vtunServerFQDN.split('.',1)[0]
+
+		print "vtunServer is %s" % vtunServer
+		query = "select max(net.channel) from networks net, nodes n where net.node=n.id and n.name='%s' and net.device like 'tun%%'" % (vtunServer)
+		print "query: %s" % (query)
+	 	rows = self.db.execute(query)
+		if rows:
+			val,=self.db.fetchone()
+			channel = int(val) + 1 
+			print "got max: channel is now %d" % channel
+		else:
+			channel=0
+			print "no tun ifs: channel is now %d" % channel
+
+		# baseNetwork should be an attribute of the vtunServer.
+		baseNetwork = "10.3.0.%d"
+		networkIP = baseNetwork % (4*channel)
+		serverIP = "10.3.0.%d" % (4*channel + 1)
+		clientIP = "10.3.0.%d" % (4*channel + 2)
+		iface='tun%d' % channel
+		tunnelNet="ec2tunnel%d" % channel
+		print "IP %s, Server %s, Client %s" % (networkIP,serverIP,clientIP)
+
+		# Tunnel Network definition
+		callargs=[tunnelNet,networkIP,'255.255.255.252','mtu=1420']
+		self.rocksCommand('add.network', callargs)
+		
+		# Tunnel interfaces:
+		# On Server:
+		callargs=[vtunServer, iface,'ip=%s' % serverIP, 'subnet=%s' % tunnelNet, 'name=vtun_%s' % nodename ]
+		self.rocksCommand('add.host.interface', callargs)
+		callargs=[vtunServer,iface,'options=noreport']
+		self.rocksCommand('set.host.interface.options', callargs)
+		# On Client:
+		callargs=[nodename, iface,'ip=%s' % clientIP, 'subnet=%s' % tunnelNet, 'name=%s' % nodename ]
+		self.rocksCommand('add.host.interface', callargs)
+		callargs=[nodename,iface,'options=noreport']
+		self.rocksCommand('set.host.interface.options', callargs)
+
+		# Routing
+		# On Server:
+		callargs=[vtunServer, ec2Host[4], clientIP]
+		self.rocksCommand('add.host.route',callargs)	
+		# On client:
+		privateNet=self.db.getHostAttr(nodename,'Kickstart_PrivateNetwork')
+		privateMask=self.db.getHostAttr(nodename,'Kickstart_PrivateNetmask')
+		callargs=[nodename,privateNet ,serverIP,'netmask=%s' % privateMask]
+		self.rocksCommand('add.host.route',callargs)	
+
+		# Firewall
+		# Server:
+		callargs=[vtunServer, 'action=ACCEPT', 'chain=INPUT','protocol=all', 'service=all','network=%s'% tunnelNet] 	
+		self.rocksCommand('add.host.firewall',callargs)	
+		callargs=[vtunServer, 'action=ACCEPT', 'chain=FORWARD','protocol=all', 'service=all','network=%s' % tunnelNet] 	
+		self.rocksCommand('add.host.firewall',callargs)	
+		# Client:
+		callargs=[nodename, 'action=ACCEPT', 'chain=INPUT','protocol=all', 'service=all','network=%s'% tunnelNet] 	
+		self.rocksCommand('add.host.firewall',callargs)	
+		callargs=[nodename, 'action=ACCEPT', 'chain=INPUT','protocol=all', 'service=all','network=ec2private'] 	
+		self.rocksCommand('add.host.firewall',callargs)	
 
 		return 1
 
