@@ -1,4 +1,4 @@
-# $Id: __init__.py,v 1.2 2010/10/11 19:00:32 phil Exp $
+# $Id: __init__.py,v 1.3 2010/10/11 23:47:34 phil Exp $
 #
 # @Copyright@
 # 
@@ -54,6 +54,9 @@
 # @Copyright@
 #
 # $Log: __init__.py,v $
+# Revision 1.3  2010/10/11 23:47:34  phil
+# Clean up. Add channel info
+#
 # Revision 1.2  2010/10/11 19:00:32  phil
 # Checkpoint. Adds, interface, network, tunnel devices, firewall, routing for
 # a newly discovered ec2 host.
@@ -177,7 +180,6 @@ class Command(command):
 		clientIP = "10.3.0.%d" % (4*channel + 2)
 		iface='tun%d' % channel
 		tunnelNet="ec2tunnel%d" % channel
-		print "IP %s, Server %s, Client %s" % (networkIP,serverIP,clientIP)
 
 		# Tunnel Network definition
 		callargs=[tunnelNet,networkIP,'255.255.255.252','mtu=1420']
@@ -189,11 +191,15 @@ class Command(command):
 		self.rocksCommand('add.host.interface', callargs)
 		callargs=[vtunServer,iface,'options=noreport']
 		self.rocksCommand('set.host.interface.options', callargs)
+		callargs=[vtunServer,iface,'channel=%d' % channel]
+		self.rocksCommand('set.host.interface.channel', callargs)
 		# On Client:
 		callargs=[nodename, iface,'ip=%s' % clientIP, 'subnet=%s' % tunnelNet, 'name=%s' % nodename ]
 		self.rocksCommand('add.host.interface', callargs)
 		callargs=[nodename,iface,'options=noreport']
 		self.rocksCommand('set.host.interface.options', callargs)
+		callargs=[nodename,iface,'channel=%d' % channel]
+		self.rocksCommand('set.host.interface.channel', callargs)
 
 		# Routing
 		# On Server:
