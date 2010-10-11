@@ -1,4 +1,4 @@
-# $Id: __init__.py,v 1.3 2010/10/08 05:32:51 phil Exp $
+# $Id: __init__.py,v 1.4 2010/10/11 23:48:16 phil Exp $
 # 
 # @Copyright@
 # 
@@ -54,6 +54,9 @@
 # @Copyright@
 #
 # $Log: __init__.py,v $
+# Revision 1.4  2010/10/11 23:48:16  phil
+# Use new ec2tunnel<n> scheme
+#
 # Revision 1.3  2010/10/08 05:32:51  phil
 # Client side set up now complete.
 # TODO: Generate a password for a connection.
@@ -117,7 +120,7 @@ default {
 			binddev,=self.db.fetchone()		 
 		except:
 			binddev = "eth0"
-		self.addOutput(host, '<file name="/opt/vtun/etc/vtund.conf">')
+		self.addOutput(host, '<file name="/opt/vtun/etc/vtund.conf" mode="600">')
 		self.addOutput(host, '<![CDATA[')
 		self.addOutput(host, commonHeader % (port, binddev))
 		
@@ -131,7 +134,7 @@ default {
 		# VTUN server must name its tunnel interface to client as:
 		# 'vtun_client'.   
 		# this and the channel number is used to "bind" the connection
-		query = "select n.device,n.name,n.ip,s.netmask,n.channel,s.mtu from networks n, subnets s, nodes where nodes.name='%s' and n.node=nodes.id and n.subnet=s.id and s.name='ec2tunnel'" % host
+		query = "select n.device,n.name,n.ip,s.netmask,n.channel,s.mtu from networks n, subnets s, nodes where nodes.name='%s' and n.node=nodes.id and n.subnet=s.id and s.name like 'ec2tunnel%%'" % host
 		self.db.execute(query)
 		try:
 			device,name,ip,netmask,channel,mtu = self.db.fetchone() 
@@ -139,12 +142,19 @@ default {
 			return
 
 		server=  'vtun_'+host
-		query2 = "select n.ip from networks n, subnets s, nodes where n.name='%s' and n.node=nodes.id and n.subnet=s.id and s.name='ec2tunnel' and n.channel='%s'"  % (server ,channel)
+		query2 = "select n.ip from networks n, subnets s, nodes where n.name='%s' and n.node=nodes.id and n.subnet=s.id and s.name='ec2tunnel%d' and n.channel='%d'"  % (server , int(channel), int(channel))
 		self.db.execute(query2)				
 		try:
 			serverip, = self.db.fetchone()
 		except:
 			serverip = None
+		
+		try:
+			privateNet = self.db.getHostAttr(host,"Kickstart_PrivateNetwork")
+			privateNetmask = self.db.getHostAttr(host,"Kickstart_PrivateNetmask")
+		except:
+			privateNet = None
+
 		cblock="""
 # Rocks-Generated: Session '%s'.
 %s {
@@ -158,11 +168,12 @@ default {
 
 	# %s - local, %s  - remote 
 	ifconfig "%%%% %s pointopoint %s mtu %d";
+	route 'add -net %s netmask %s gw %s';
   };
 }
-""" % (host,host,device,ip,serverip,ip,serverip,mtu)
+""" % (host,host,device,ip,serverip,ip,serverip,mtu,privateNet,privateNetmask,serverip)
 
-		if serverip is not None:
+		if serverip is not None and privateNet is not None:
 			self.addOutput(host, cblock)
 
 	def writeServerConfig(self, host):
@@ -173,7 +184,7 @@ default {
 		# this and the channel number is used to "bind" the connection 
 		# to the client.
 
-		query = "select n.device,n.name,n.ip,s.netmask,n.channel,s.mtu from networks n, subnets s, nodes where nodes.name='%s' and n.node=nodes.id and n.subnet=s.id and s.name='ec2tunnel'" % host
+		query = "select n.device,n.name,n.ip,s.netmask,n.channel,s.mtu from networks n, subnets s, nodes where nodes.name='%s' and n.node=nodes.id and n.subnet=s.id and s.name like 'ec2tunnel%%'" % host
 		self.db.execute(query)
 
 		# record all tunnels that this host is willing serve
@@ -189,12 +200,26 @@ default {
 			tmp,client = name.split('vtun_',1)
 			# find the ip address of the client side
 			# channels must match
-			query2 = "select n.ip from networks n, subnets s, nodes where nodes.name='%s' and n.node=nodes.id and n.subnet=s.id and s.name='ec2tunnel' and n.channel='%s'"  % (client ,channel)
+			query2 = "select n.ip from networks n, subnets s, nodes where nodes.name='%s' and n.node=nodes.id and n.subnet=s.id and s.name='ec2tunnel%d' and n.channel='%d'"  % (client ,int(channel), int(channel))
 			self.db.execute(query2)				
 			try:
 				clientip, = self.db.fetchone()
 			except:
 				clientip = None
+
+			try:	
+				privNet = self.db.getHostAttr(client,'primary_net')
+			except:
+				privNet = None
+
+			query3 = "select n.ip from networks n, subnets s, nodes where nodes.name='%s' and n.node=nodes.id and n.subnet=s.id and s.name='%s'"  % (client ,privNet)
+			self.db.execute(query3)				
+			try:
+				privateip, = self.db.fetchone()
+			except:
+				privateip = None
+
+
 			sblock="""
 # Rocks-Generated: Session '%s'.
 %s {
@@ -208,11 +233,12 @@ default {
 
 	# %s - local, %s  - remote 
 	ifconfig "%%%% %s pointopoint %s mtu %d";
+	route "add -host %s gw %s";
   };
 }
-""" % (client,client,device,ip,clientip,ip,clientip,mtu)
+""" % (client,client,device,ip,clientip,ip,clientip,mtu,privateip,clientip)
 			
-			if clientip is not None:
+			if clientip is not None and privateip is not None:
 				self.addOutput(host, sblock)
 
 
