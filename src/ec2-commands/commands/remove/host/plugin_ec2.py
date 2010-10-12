@@ -1,4 +1,4 @@
-# $Id: plugin_ec2.py,v 1.1 2010/10/12 04:50:43 phil Exp $
+# $Id: plugin_ec2.py,v 1.2 2010/10/12 05:04:42 phil Exp $
 # 
 # @Copyright@
 # 
@@ -54,6 +54,9 @@
 # @Copyright@
 #
 # $Log: plugin_ec2.py,v $
+# Revision 1.2  2010/10/12 05:04:42  phil
+# Remove the tun interface from the host, so that we can delete the tunnel network def
+#
 # Revision 1.1  2010/10/12 04:50:43  phil
 # Remove ec2 constructions with remove host plugin
 # Write an /etc/sysconfig/vtun configuration file
@@ -121,6 +124,8 @@ class Plugin(rocks.commands.Plugin):
 				pass
 		if vtunServer and serverdev:
 			callargs = [vtunServer, serverdev]
+			self.rocksCommand('remove.host.interface', callargs)
+			callargs = [host, serverdev]
 			self.rocksCommand('remove.host.interface', callargs)
 
 		if vtunServer and channel:
