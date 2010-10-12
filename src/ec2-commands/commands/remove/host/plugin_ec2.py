@@ -1,4 +1,4 @@
-# $Id: plugin_ec2.py,v 1.2 2010/10/12 05:04:42 phil Exp $
+# $Id: plugin_ec2.py,v 1.3 2010/10/12 21:17:46 phil Exp $
 # 
 # @Copyright@
 # 
@@ -54,6 +54,9 @@
 # @Copyright@
 #
 # $Log: plugin_ec2.py,v $
+# Revision 1.3  2010/10/12 21:17:46  phil
+# Use the new precedes ordering to insure we run before the interface plugin
+#
 # Revision 1.2  2010/10/12 05:04:42  phil
 # Remove the tun interface from the host, so that we can delete the tunnel network def
 #
@@ -71,8 +74,8 @@ class Plugin(rocks.commands.Plugin):
 	def provides(self):
 		return 'ec2'
 
-# 	def requires(self):
-#		return [ 'HEAD' ]
+ 	def precedes(self):
+		return [ 'interface' ]
 
 	def rocksCommand(self,command,callargs):
 		print "%s: %s" % (command, callargs)
