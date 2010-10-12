@@ -1,4 +1,4 @@
-# $Id: __init__.py,v 1.4 2010/10/11 23:48:16 phil Exp $
+# $Id: __init__.py,v 1.5 2010/10/12 04:50:43 phil Exp $
 # 
 # @Copyright@
 # 
@@ -54,6 +54,12 @@
 # @Copyright@
 #
 # $Log: __init__.py,v $
+# Revision 1.5  2010/10/12 04:50:43  phil
+# Remove ec2 constructions with remove host plugin
+# Write an /etc/sysconfig/vtun configuration file
+# Cleanup on adding an ec2 host
+# TODO: Figure out how to remove the routing...plugin ordering.
+#
 # Revision 1.4  2010/10/11 23:48:16  phil
 # Use new ec2tunnel<n> scheme
 #
@@ -175,6 +181,11 @@ default {
 
 		if serverip is not None and privateNet is not None:
 			self.addOutput(host, cblock)
+			self.writeCommonTrailer(host)
+			self.addOutput(host, '<file name="/etc/sysconfig/vtun" mode="600">')
+			self.addOutput(host, '<![CDATA[')
+			self.addOutput(host, 'VTUNSERVER=%s' % self.db.getHostAttr(host,'vtunServer') )
+			self.addOutput(host, 'VTUNPROFILE=%s' % host )
 
 	def writeServerConfig(self, host):
 		## Logic --

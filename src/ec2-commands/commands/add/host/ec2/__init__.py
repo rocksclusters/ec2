@@ -1,4 +1,4 @@
-# $Id: __init__.py,v 1.3 2010/10/11 23:47:34 phil Exp $
+# $Id: __init__.py,v 1.4 2010/10/12 04:50:43 phil Exp $
 #
 # @Copyright@
 # 
@@ -54,6 +54,12 @@
 # @Copyright@
 #
 # $Log: __init__.py,v $
+# Revision 1.4  2010/10/12 04:50:43  phil
+# Remove ec2 constructions with remove host plugin
+# Write an /etc/sysconfig/vtun configuration file
+# Cleanup on adding an ec2 host
+# TODO: Figure out how to remove the routing...plugin ordering.
+#
 # Revision 1.3  2010/10/11 23:47:34  phil
 # Clean up. Add channel info
 #
@@ -141,7 +147,7 @@ class Command(command):
 		self.rocksCommand('set.host.interface.options', callargs)
 
 		# Public:
-		callargs=[nodename, 'pub0','ip=%s' % ec2Host[2], 'name=%s' % ec2Host[1].split('.',1)[0], 'subnet=ec2public']
+		callargs=[nodename, 'pub0','ip=%s' % ec2Host[2], 'name=%s' % nodename, 'subnet=ec2public']
 		self.rocksCommand('add.host.interface', callargs)
 		callargs=[nodename, 'pub0', 'options=noreport']
 		self.rocksCommand('set.host.interface.options', callargs)
@@ -165,11 +171,11 @@ class Command(command):
 		query = "select max(net.channel) from networks net, nodes n where net.node=n.id and n.name='%s' and net.device like 'tun%%'" % (vtunServer)
 		print "query: %s" % (query)
 	 	rows = self.db.execute(query)
-		if rows:
+		try:
 			val,=self.db.fetchone()
 			channel = int(val) + 1 
 			print "got max: channel is now %d" % channel
-		else:
+		except:
 			channel=0
 			print "no tun ifs: channel is now %d" % channel
 
@@ -182,8 +188,11 @@ class Command(command):
 		tunnelNet="ec2tunnel%d" % channel
 
 		# Tunnel Network definition
-		callargs=[tunnelNet,networkIP,'255.255.255.252','mtu=1420']
-		self.rocksCommand('add.network', callargs)
+		try:
+			callargs=[tunnelNet,networkIP,'255.255.255.252','mtu=1420']
+			self.rocksCommand('add.network', callargs)
+		except:
+			pass
 		
 		# Tunnel interfaces:
 		# On Server:
@@ -203,8 +212,11 @@ class Command(command):
 
 		# Routing
 		# On Server:
-		callargs=[vtunServer, ec2Host[4], clientIP]
-		self.rocksCommand('add.host.route',callargs)	
+		try:
+			callargs=[vtunServer, ec2Host[4], clientIP]
+			self.rocksCommand('add.host.route',callargs)	
+		except:
+			pass
 		# On client:
 		privateNet=self.db.getHostAttr(nodename,'Kickstart_PrivateNetwork')
 		privateMask=self.db.getHostAttr(nodename,'Kickstart_PrivateNetmask')
