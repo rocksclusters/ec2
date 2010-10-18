@@ -1,4 +1,4 @@
-# $Id: __init__.py,v 1.5 2010/10/12 04:50:43 phil Exp $
+# $Id: __init__.py,v 1.6 2010/10/18 12:57:19 phil Exp $
 # 
 # @Copyright@
 # 
@@ -54,6 +54,10 @@
 # @Copyright@
 #
 # $Log: __init__.py,v $
+# Revision 1.6  2010/10/18 12:57:19  phil
+# On-the-fly firewall changes (also recorded in rocks firewall commands)
+# Clean up syntax on configuration file
+#
 # Revision 1.5  2010/10/12 04:50:43  phil
 # Remove ec2 constructions with remove host plugin
 # Write an /etc/sysconfig/vtun configuration file
@@ -174,16 +178,18 @@ default {
 
 	# %s - local, %s  - remote 
 	ifconfig "%%%% %s pointopoint %s mtu %d";
-	route 'add -net %s netmask %s gw %s';
+	route "add -net %s netmask %s gw %s";
+	firewall "-I INPUT -i %s -j ACCEPT";
   };
 }
-""" % (host,host,device,ip,serverip,ip,serverip,mtu,privateNet,privateNetmask,serverip)
+""" % (host,host,device,ip,serverip,ip,serverip,mtu,privateNet,privateNetmask,serverip,device)
 
 		if serverip is not None and privateNet is not None:
 			self.addOutput(host, cblock)
 			self.writeCommonTrailer(host)
-			self.addOutput(host, '<file name="/etc/sysconfig/vtun" mode="600">')
+			self.addOutput(host, '<file name="/etc/sysconfig/vtund" mode="600">')
 			self.addOutput(host, '<![CDATA[')
+			self.addOutput(host, 'VTUNMODE=client')
 			self.addOutput(host, 'VTUNSERVER=%s' % self.db.getHostAttr(host,'vtunServer') )
 			self.addOutput(host, 'VTUNPROFILE=%s' % host )
 
@@ -245,9 +251,11 @@ default {
 	# %s - local, %s  - remote 
 	ifconfig "%%%% %s pointopoint %s mtu %d";
 	route "add -host %s gw %s";
+	firewall "-I INPUT -i %s -j ACCEPT";
+	firewall "-I FORWARD -i %s -j ACCEPT";
   };
 }
-""" % (client,client,device,ip,clientip,ip,clientip,mtu,privateip,clientip)
+""" % (client,client,device,ip,clientip,ip,clientip,mtu,privateip,clientip,device,device)
 			
 			if clientip is not None and privateip is not None:
 				self.addOutput(host, sblock)
