@@ -26,6 +26,7 @@ VTUND=/opt/vtun/sbin/vtund
 VTUNMODE=server
 VTUNSERVER=
 VTUNPROFILE=
+IPIPMODULE=ipip
 # source the variables in /etc/sysconfig/vtund
 if [ -f $VTUNDSYSCONFIG ]; then
 	. $VTUNDSYSCONFIG
@@ -37,6 +38,9 @@ check() {
 	
 	# Check if vtund is executable
 	test -x $VTUND || exit 5
+	
+	# Make sure the ipip module is inserted
+	/sbin/modprobe $IPIPMODULE
 }
 
 start() {

@@ -1,4 +1,4 @@
-# $Id: __init__.py,v 1.6 2010/10/18 12:57:19 phil Exp $
+# $Id: __init__.py,v 1.7 2010/10/20 22:57:02 phil Exp $
 # 
 # @Copyright@
 # 
@@ -54,6 +54,9 @@
 # @Copyright@
 #
 # $Log: __init__.py,v $
+# Revision 1.7  2010/10/20 22:57:02  phil
+# firewall commands were causing multiple identical rules in firewall to be added.make sure ipip module is loaded before running vtun service
+#
 # Revision 1.6  2010/10/18 12:57:19  phil
 # On-the-fly firewall changes (also recorded in rocks firewall commands)
 # Clean up syntax on configuration file
@@ -171,8 +174,7 @@ default {
   passwd  Ma&^TU;	# Password
   type  tun;		# IP tunnel 
   device %s;		# Device 
-  proto udp;   		# UDP protocol
-  keepalive yes;	# Keep connection alive
+  persist yes;	# Keep connection alive
   up {
 	# Connection is Up 
 
@@ -243,19 +245,16 @@ default {
   passwd  Ma&^TU;	# Password
   type  tun;		# IP tunnel 
   device %s;		# device to use
-  proto udp;   		# UDP protocol
-  keepalive yes;	# Keep connection alive
+  persist yes;	# Keep connection alive
   up {
 	# Connection is Up 
 
 	# %s - local, %s  - remote 
 	ifconfig "%%%% %s pointopoint %s mtu %d";
 	route "add -host %s gw %s";
-	firewall "-I INPUT -i %s -j ACCEPT";
-	firewall "-I FORWARD -i %s -j ACCEPT";
   };
 }
-""" % (client,client,device,ip,clientip,ip,clientip,mtu,privateip,clientip,device,device)
+""" % (client,client,device,ip,clientip,ip,clientip,mtu,privateip,clientip)
 			
 			if clientip is not None and privateip is not None:
 				self.addOutput(host, sblock)
