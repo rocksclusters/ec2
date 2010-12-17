@@ -1,12 +1,14 @@
-# $Id: Makefile,v 1.2 2010/12/17 00:03:30 phil Exp $
+# $Id: udt.csh,v 1.1 2010/12/17 00:03:30 phil Exp $
+#
+# Using Condor on a Rocks cluster
 #
 # @Copyright@
 # 
 # 				Rocks(r)
 # 		         www.rocksclusters.org
-# 		       version 5.2 (Chimichanga)
+# 		         version 5.4 (Maverick)
 # 
-# Copyright (c) 2000 - 2009 The Regents of the University of California.
+# Copyright (c) 2000 - 2010 The Regents of the University of California.
 # All rights reserved.	
 # 
 # Redistribution and use in source and binary forms, with or without
@@ -53,62 +55,19 @@
 # 
 # @Copyright@
 #
-# $Log: Makefile,v $
-# Revision 1.2  2010/12/17 00:03:30  phil
+# $Log: udt.csh,v $
+# Revision 1.1  2010/12/17 00:03:30  phil
 # profile.d entries for udt
 #
-# Revision 1.1  2010/12/16 23:53:05  phil
-# Build UDT RPM.
 #
-# Revision 1.2  2010/10/08 20:54:36  phil
-# Add service startup script
-#
-# Revision 1.1  2010/10/01 20:13:20  phil
-# Easily set up generic IP tunnels.
 #
 
-REDHAT.ROOT = $(CURDIR)/../../
 
--include $(ROCKSROOT)/etc/Rules.mk
-include Rules.mk
+UDTROOT=/opt/udt
+set BIN=${UDTROOT}/bin
 
-TESTARCH =      x86_64
-ifeq ($(ARCH),$(TESTARCH))
-UDTARCH  = AMD64
-else
-UDTARCH = i386
+if ( -d ${BIN}  ) then
+        setenv PATH "${PATH}:${BIN}"
 endif
 
-APPS = sendfile recvfile appclient appserver
-PROFILES = udt.sh udt.csh
-build:
-	gunzip -c $(TARBALL_PREFIX).$(VERSION).$(TARBALL_POSTFIX) | $(TAR) -xf -
-	( 							\
-		cd $(NAME);					\
-		$(MAKE) -e os=LINUX arch=$(UDTARCH);					\
-	)
-	
-install::
-	mkdir -p $(ROOT)/$(PKGROOT)/$(NAME)
-	mkdir -p $(ROOT)/$(PKGROOT)/$(NAME)/lib
-	mkdir -p $(ROOT)/$(PKGROOT)/$(NAME)/include
-	mkdir -p $(ROOT)/$(PKGROOT)/$(NAME)/bin
-	(								\
-		install -m 644  $(TARBALL_PREFIX).$(VERSION).$(TARBALL_POSTFIX) $(ROOT)/$(PKGROOT)/$(NAME);	\
-		$(TAR) cf - doc | (cd $(ROOT)/$(PKGROOT)/$(NAME); $(TAR) xvfBp -);	\
-		cd $(NAME);						\
-		install -m 644 *.txt $(ROOT)/$(PKGROOT)/$(NAME);	\
-		cd src;						\
-		install -m 644 *.h $(ROOT)/$(PKGROOT)/$(NAME)/include ;	\
-		install -m 644 *.so $(ROOT)/$(PKGROOT)/$(NAME)/lib ;	\
-		install -m 644 *.a $(ROOT)/$(PKGROOT)/$(NAME)/lib ;	\
-		cd ../app;						\
-		install -m 755 $(APPS) $(ROOT)/$(PKGROOT)/$(NAME)/bin ;	\
-	)
-	mkdir -p $(ROOT)/etc/ld.so.conf.d
-	echo "$(PKGROOT)/$(NAME)/lib" > $(ROOT)/etc/ld.so.conf.d/udt4.conf
-	mkdir -p $(ROOT)/etc/profile.d
-	install -m 755 $(PROFILES) $(ROOT)/etc/profile.d
 
-clean::
-	rm -rf $(NAME)
