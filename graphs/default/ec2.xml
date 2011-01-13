@@ -48,6 +48,7 @@
 	<edge from="lite-client">
 		<to>lite-base</to>
 		<to>411-client</to>
+		<to>node-certs</to>
 	</edge>
 
 	<edge from="lite-base">
