@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.4 2010/03/06 01:09:07 phil Exp $
+# $Id: Makefile,v 1.5 2011/01/13 22:37:19 phil Exp $
 #
 # @Copyright@
 # 
@@ -54,6 +54,9 @@
 # @Copyright@
 #
 # $Log: Makefile,v $
+# Revision 1.5  2011/01/13 22:37:19  phil
+# Checkpoint. New version of ami/api tools, condor plugin. lightweight appliance
+#
 # Revision 1.4  2010/03/06 01:09:07  phil
 # Hack in threaded upload support. With 32 threads on landphil, upload goes from
 # 600KB/sec to 16MB/sec.
@@ -101,6 +104,8 @@
 # baseline
 #
 #
+# Original Download Location: 
+#              http://s3.amazonaws.com/ec2-downloads/ec2-ami-tools.zip
 
 PKGROOT = /opt/ec2
 REDHAT.ROOT     = $(PWD)/../../

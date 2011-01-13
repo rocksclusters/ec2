@@ -1,0 +1,250 @@
+<kickstart>
+
+  <description>
+
+  Base class for all Rocks nodes.  This should include compute nodes,
+  frontend nodes, standalone laptops, computer labs, graphics nodes,
+  nfs servers
+
+  To achieve this level of flexibility this base class should have
+  edges only to those classes that implement the core of Rocks.
+
+  </description>
+
+        <copyright>
+        Copyright (c) 2000 - 2009 The Regents of the University of California.
+        All rights reserved. Rocks(r) v5.2 www.rocksclusters.org
+        
+        </copyright>
+
+  <changelog>
+  $Log: lite-base.xml,v $
+  Revision 1.1  2011/01/13 22:37:18  phil
+  Checkpoint. New version of ami/api tools, condor plugin. lightweight appliance
+
+  </changelog>
+
+
+<main>
+
+<install>
+%include /tmp/partition-info
+</install>
+
+<lang>&Kickstart_Lang;</lang>
+<keyboard>&Kickstart_Keyboard;</keyboard>
+<!--
+<mouse>&Kickstart_Mouse;</mouse>
+-->
+
+<timezone>--utc &Kickstart_Timezone;</timezone>
+<bootloader>--location=mbr</bootloader>
+
+<url> --url http://&Kickstart_PrivateKickstartHost;/&Kickstart_PrivateKickstartBasedir;/&distribution;/&arch; </url>
+<interactive/>
+
+</main>
+
+  <!-- for the reboot command -->
+  <package>usermode</package>
+
+  <package>sharutils</package>
+  <package>rcs</package>
+
+  <!-- to fix a yum bug on 64-bit -->
+  <package>nspr.&arch;</package>
+
+  <!--pylib-->
+  <package>rocks-pylib</package>
+  <package>foundation-python-extras</package>
+  <package>foundation-python-xml</package>
+
+<pre>
+
+<!-- propagate root's public ssh key for ekv -->
+
+<!-- if the authorized_keys file already exists, then don't recreate it -->
+if [ -f /tmp/authorized_keys ]
+then
+	exit
+fi
+
+<!--
+	not using 'file' tags as file tags are expanded by kgen to include
+	extra wrapper code and this wrapper code is not present in the 'pre'
+	environment.
+-->
+
+cat &gt; /tmp/authorized_keys &lt;&lt; 'EOF'
+<eval shell="python">
+
+import os
+
+def readkeys(filename):
+	try:
+		file = open(filename, 'r')
+		for key in file.readlines():
+			if len(key) > 0:
+				print '%s' % (key[:-1])
+		file.close()
+	except:
+		pass
+
+	return
+
+#
+# first put in root's public key
+#
+readkeys('/root/.ssh/id_rsa.pub')
+
+#
+# now get all the public keys for the trusted users
+#
+keydir = '/etc/ssh/authorized_keys'
+
+if os.path.isdir(keydir):
+	for keyfile in os.listdir(keydir):
+		filename = os.path.join(keydir, keyfile)
+		readkeys(filename)
+
+</eval>
+EOF
+
+chmod 600 /tmp/authorized_keys
+
+</pre>
+
+
+<pre>
+
+<!--
+	copy over the rotating graphics from updates.img into a location
+	where anaconda will find them
+-->
+
+cd /tmp/updates
+cp -r pixmaps /tmp/product/
+
+</pre>
+
+
+<post os='linux'>
+/sbin/chkconfig rocks-pre on
+/sbin/chkconfig rocks-post on
+</post>
+
+<post>
+
+<!-- enable the rc.rocksconfig directory -->
+
+<file name="/etc/inittab" mode="append">
+bw::bootwait:/etc/rc.d/rc.rocksconfig before-rc
+po:35:wait:/etc/rc.d/rc.rocksconfig after-rc
+</file>
+
+<!-- message of the day -->
+<file name="/etc/motd" mode="append">
+Rocks &version; (&release;)
+<eval shell="sh">
+echo "Profile built `date +'%H:%M %d-%b-%Y'`"
+</eval>
+</file>
+
+<file name="/etc/motd" mode="append" vars="expanded">
+Kickstarted `date +"%H:%M %d-%b-%Y"`
+</file>
+
+<file name="/var/cluster/born-on">
+<eval>
+date +"%H:%M:%S %d-%b-%Y"
+python -c 'import time; print "%.7f" % time.time()'
+</eval>
+</file>
+
+for i in kudzu canna cWnn FreeWnn kWnn tWnn mDNSResponder
+do
+	if [ -f /etc/rc.d/init.d/$i ]; then
+		/sbin/chkconfig $i off
+	fi
+done
+
+<file name="/etc/sysconfig/i18n">
+LANG="en_US.iso885915"
+SYSFONT="lat0-sun16"
+</file>
+
+</post>
+
+
+<post>
+chmod a+rwx /state/partition*
+chmod o+t /state/partition*
+</post>
+
+<post>
+
+<file name="/etc/rpm/macros.rocks" perms="0644">
+%distribution Rocks
+
+%debug_package %{nil}
+%_without_check 0
+%_unpackaged_files_terminate_build 0 
+%_missing_doc_files_terminate_build 0
+%__vsflags 0xc0c00
+</file>
+
+</post>
+
+
+<post os="linux">
+
+<!--
+	libgcj lays down a dummy 'java' executible, so let's nuke it.
+	this makes sure that the real java (included in this roll) is used
+-->
+rm -f /usr/bin/java
+
+<file name="/etc/man.config" mode="append">
+MANPATH /usr/java/jdk1.5/man
+</file>
+
+<file name="/etc/profile.d/java.sh" perms="0755">
+export JAVA_HOME=/usr/java/latest
+export PATH=$JAVA_HOME/bin:$PATH
+</file>
+
+<file name="/etc/profile.d/java.csh" perms="0755">
+setenv JAVA_HOME /usr/java/latest
+set path = ($JAVA_HOME/bin $path)
+</file>
+
+</post>
+
+
+<post os="sunos">
+
+<file name="/etc/profile.d/java.sh" perms="0755">
+export JAVA_HOME=/usr/java
+export PATH=$JAVA_HOME/bin:$PATH
+</file>
+
+<file name="/etc/profile.d/java.csh" perms="0755">
+setenv JAVA_HOME /usr/java
+set path = ($JAVA_HOME/bin $path)
+</file>
+
+</post>
+
+<post>
+<file name="/tmp/mdmonitor"
+	expr="sed -e 's/--user=root//' /etc/rc.d/init.d/mdmonitor"/>
+
+<file name="/etc/rc.d/init.d/mdmonitor" perms="755"
+	expr="cat /tmp/mdmonitor"/>
+
+rm /tmp/mdmonitor
+</post>
+
+
+</kickstart> 
+

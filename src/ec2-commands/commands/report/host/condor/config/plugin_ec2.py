@@ -1,12 +1,12 @@
-# $Id: Makefile,v 1.4 2011/01/13 22:37:19 phil Exp $
-#
+# $Id: plugin_ec2.py,v 1.1 2011/01/13 22:37:19 phil Exp $
+# 
 # @Copyright@
 # 
 # 				Rocks(r)
 # 		         www.rocksclusters.org
-# 		            version 5.0 (V)
+# 		       version 5.2 (Chimichanga)
 # 
-# Copyright (c) 2000 - 2008 The Regents of the University of California.
+# Copyright (c) 2000 - 2009 The Regents of the University of California.
 # All rights reserved.	
 # 
 # Redistribution and use in source and binary forms, with or without
@@ -53,78 +53,46 @@
 # 
 # @Copyright@
 #
-# $Log: Makefile,v $
-# Revision 1.4  2011/01/13 22:37:19  phil
+# $Log: plugin_ec2.py,v $
+# Revision 1.1  2011/01/13 22:37:19  phil
 # Checkpoint. New version of ami/api tools, condor plugin. lightweight appliance
 #
-# Revision 1.3  2009/06/09 22:45:29  phil
-# Fixes. Create profile directories properly
-#
-# Revision 1.2  2009/06/01 06:57:55  phil
-# Adjustment
-#
-# Revision 1.1  2008/05/21 22:24:18  phil
-# API tools RPM.
-#
-# Revision 1.1  2008/05/21 20:44:30  phil
-# ami grinder tools
-#
-# Revision 1.12  2008/03/06 23:41:59  mjk
-# copyright storm on
-#
-# Revision 1.11  2007/06/23 04:04:02  mjk
-# mars hill copyright
-#
-# Revision 1.10  2006/09/11 22:50:18  mjk
-# monkey face copyright
-#
-# Revision 1.9  2006/08/10 00:12:02  mjk
-# 4.2 copyright
-#
-# Revision 1.8  2006/05/10 21:41:30  bruno
-# more prep for RAP 2
-#
-# Revision 1.7  2005/10/12 18:11:08  mjk
-# final copyright for 4.1
-#
-# Revision 1.6  2005/09/16 01:04:45  mjk
-# updated copyright
-#
-# Revision 1.5  2005/05/24 21:23:58  mjk
-# update copyright, release is not any closer
-#
-# Revision 1.4  2005/03/09 20:09:49  nadya
-# reinstate previous version
-#
-# Revision 1.2  2004/12/02 01:00:32  nadya
-# update targets so can build a fake roll without a tarball
-#
-# Revision 1.1  2004/12/01 01:31:56  nadya
-# baseline
-#
-#
-# Original Download Location:
-#           http://s3.amazonaws.com/ec2-downloads/ec2-api-tools.zip
 
-PKGROOT = /opt/ec2
-REDHAT.ROOT     = $(PWD)/../../
--include $(ROCKSROOT)/etc/Rules.mk
-include Rules.mk
+import rocks.commands
 
+class Plugin(rocks.commands.Plugin):
 
-build:
-	tar -zxf $(NAME)-$(DIREXT).$(TARBALL_POSTFIX)
-#	(cd patch-files && find . -type f | grep -v CVS | cpio -pduv ../)
-	
-install::
-	mkdir -p $(ROOT)/$(PKGROOT)/$(NAME)
-	mkdir -p $(ROOT)/etc/profile.d
-	(								           \
-		cd $(NAME)-$(DIREXT);					           \
-		find . -type d -exec $(INSTALL) -d $(ROOT)/$(PKGROOT)/{} \; ;      \
-		find . -type f -exec $(INSTALL) {} $(ROOT)/$(PKGROOT)/{} \; ;      \
-	)
-	$(INSTALL) -m 755 ec2-apitools.sh $(ROOT)/etc/profile.d/ec2-apitools.sh
+	def provides(self):
+		return 'ec2'
 
-clean::
-	rm -rf $(NAME)-$(VERSION)
+	def run(self, argv):
+		# Argv contains the hostname and the in memory key-value store
+	        # that is eventually written to 
+		# /opt/condor/etc/condor_config.local
+		# plugins can add/change/remove keys from the store
+
+		# 1. Get the hostname and the key-value store, which
+		#    is a python dictionary 
+		host, kvstore = argv 
+		# See if I am an ec2-dynamic appliance
+		callargs = [host, 'output-header=no']
+		appliance = self.owner.command('list.host.appliance', callargs)
+		appliance = appliance.rstrip()
+		if appliance != 'ec2-dynamic':
+			return
+
+		# The following would add CONDOR_SAMPLE=Sample Plugin
+		# the key = value dictionary (kvstore)  that is written out
+		# get the ip address of the ec2private and ec2public interfaces	
+		query = "select net.ip from networks net, nodes n, subnets s where net.node=n.id and net.subnet=s.id and n.name='%s' and s.name='%s'"
+		try:
+			self.owner.db.execute(query % (host,'ec2private'))
+			privateip, = self.owner.db.fetchone()
+			self.owner.db.execute(query % (host,'ec2public'))
+			publicip, = self.owner.db.fetchone()
+			kvstore['PRIVATE_NETWORK_NAME'] = 'ec2private' 
+        		kvstore['TCP_FORWARDING_HOST'] = publicip
+        		kvstore['PRIVATE_NETWORK_INTERFACE'] =  privateip
+        		kvstore['NETWORK_INTERFACE'] =  privateip
+		except:
+			pass

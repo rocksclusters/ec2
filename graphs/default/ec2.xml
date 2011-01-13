@@ -14,6 +14,15 @@
 
 	<!-- Graph Ordering for Kickstart Generation -->
 
+
+	<order head="python-development">
+		<tail>lite-base</tail>
+	</order>
+
+	<order head="compute-appliance">
+		<tail>lite-base</tail>
+	</order>
+
 	<order head="database-security">
 		<tail>devel-server</tail>
 	</order>
@@ -36,6 +45,33 @@
 		<to>devel-server</to>
 	</edge>
 
+	<edge from="lite-client">
+		<to>lite-base</to>
+		<to>411-client</to>
+	</edge>
+
+	<edge from="lite-base">
+		<to>node</to>
+		<to>autofs</to>
+		<to>snmp-server</to>
+		<to>syslog</to>
+		<to>security</to>
+		<to>disk-stamp</to>
+		<to>grub</to>
+		<to>ip-diag</to>
+		<to>logrotate</to>
+		<to>rpc</to>
+		<to>ntp</to>
+		<to>firewall</to>
+		<to>selinux</to>
+		<to>i18n</to>
+		<to>411-base</to>
+		<to>greceptor</to>
+		<to>mail</to>
+		<to>partition</to>
+		<to>yum</to>
+	</edge>
+
 	<edge from="devel-client">
 		<to>client</to>
 		<to>foundation-server</to>
@@ -55,6 +91,12 @@
 
 	<edge from="vm-container-client">
 		<to>ec2-common</to>
+	</edge>
+
+	<edge from="lite-client" cond="ec2_enable">
+		<to>ec2-client</to>
+		<to>ec2-common</to>
+		<to>ec2-partition</to>
 	</edge>
 
 	<edge from="client" cond="ec2_enable">

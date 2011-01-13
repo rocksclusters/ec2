@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.2 2010/12/17 00:03:30 phil Exp $
+# $Id: Makefile,v 1.3 2011/01/13 22:37:19 phil Exp $
 #
 # @Copyright@
 # 
@@ -54,6 +54,9 @@
 # @Copyright@
 #
 # $Log: Makefile,v $
+# Revision 1.3  2011/01/13 22:37:19  phil
+# Checkpoint. New version of ami/api tools, condor plugin. lightweight appliance
+#
 # Revision 1.2  2010/12/17 00:03:30  phil
 # profile.d entries for udt
 #
@@ -95,8 +98,8 @@ install::
 	mkdir -p $(ROOT)/$(PKGROOT)/$(NAME)/bin
 	(								\
 		install -m 644  $(TARBALL_PREFIX).$(VERSION).$(TARBALL_POSTFIX) $(ROOT)/$(PKGROOT)/$(NAME);	\
-		$(TAR) cf - doc | (cd $(ROOT)/$(PKGROOT)/$(NAME); $(TAR) xvfBp -);	\
 		cd $(NAME);						\
+		$(TAR) cf - doc | (cd $(ROOT)/$(PKGROOT)/$(NAME); $(TAR) xvfBp -);	\
 		install -m 644 *.txt $(ROOT)/$(PKGROOT)/$(NAME);	\
 		cd src;						\
 		install -m 644 *.h $(ROOT)/$(PKGROOT)/$(NAME)/include ;	\
