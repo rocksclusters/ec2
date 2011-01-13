@@ -1,0 +1,3 @@
+NAME = socat
+RELEASE = 1
+VERSION = 1.7.1.3
