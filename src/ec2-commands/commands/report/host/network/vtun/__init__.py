@@ -1,4 +1,4 @@
-# $Id: __init__.py,v 1.7 2010/10/20 22:57:02 phil Exp $
+# $Id: __init__.py,v 1.8 2011/01/15 00:23:30 phil Exp $
 # 
 # @Copyright@
 # 
@@ -54,6 +54,9 @@
 # @Copyright@
 #
 # $Log: __init__.py,v $
+# Revision 1.8  2011/01/15 00:23:30  phil
+# Force data type on Database read
+#
 # Revision 1.7  2010/10/20 22:57:02  phil
 # firewall commands were causing multiple identical rules in firewall to be added.make sure ipip module is loaded before running vtun service
 #
@@ -135,7 +138,7 @@ default {
 			binddev = "eth0"
 		self.addOutput(host, '<file name="/opt/vtun/etc/vtund.conf" mode="600">')
 		self.addOutput(host, '<![CDATA[')
-		self.addOutput(host, commonHeader % (port, binddev))
+		self.addOutput(host, commonHeader % ((int)port, binddev))
 		
 	def writeCommonTrailer(self, host):
 		self.addOutput(host, ']]>')
