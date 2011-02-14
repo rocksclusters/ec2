@@ -3,34 +3,61 @@
 
 
 <para>
-The EC2 (Elastic Compute Cloud) roll is designed to enable users to develop and test virtual 
-machine appliances on a local Rocks cluster and then easily bundle and upload the appliance as a virtual machine 
-image in Amazon's EC2 Computing Cloud.  
+The EC2 (Elastic Compute Cloud) roll is designed to enable users to 
+develop and test virtual machine appliances on a local Rocks cluster 
+and then easily bundle and upload the appliance as a virtual machine 
+image in Amazon's EC2 Computing Cloud.  Initial Release of this Roll
+supports creation of paravirtualized machines backed by S3 storage. A 
+subsequent release will support building of bootable EBS volumes.  
 </para>
-<para> Amazon boasts "thousands of available public images," yet the specific contents and 
-software versions are unknown quantities.  Most of these available images are crafted 
-by hand and may or may not suit your needs. Only careful and meticulous inspection will determine
-if these images have the software you need. Starting with an existing image that does not meet 
+<para> Amazon boasts "thousands of available public images," 
+yet the specific contents and software versions are unknown quantities.  
+Most of these available images are crafted by hand and may or may not suit your needs. Only careful and meticulous inspection will determine if these images have the software you need. Starting with an existing image that does not meet 
 your needs then requires hand-configuration and rebundling. 
 </para>
 
 <para>
 The goal of this Roll is to enable well-defined and repeatable machine
-definitions for users who would like the descriptive power of Rocks Rolls to define
-their own custom Amazon instances. Rocks-created images can be tested/tuned locally 
-and then uploaded (and published if desired) as Amazon Machine Images. 
+definitions for users who would like the descriptive power of Rocks Rolls 
+to define their own custom Amazon instances. Rocks-created images can be 
+tested/tuned locally and then uploaded (and published if desired) as Amazon Machine Images. 
 </para>
 
 <para>
 This roll simplifies the arcane tasks of Amazon Machine Image (AMI) preparation 
-and bundling.  This roll requires the Rocks Xen Roll. For a user to upload, store, and boot 
-an image in Amazon, an account with <trademark>Amazon Web Services</trademark> is required.
+and bundling.  This roll requires the Rocks Xen Roll. For a user to upload, store, and boot an image in Amazon, an account with <trademark>Amazon Web Services</trademark> is required.
 </para> 
 
 <para>
 The roll does not currently enable user to build clusters inside of Amazon. 
 </para>
 
+<para>
+The key capabilities of this Roll include
+
+<itemizedlist>
+
+<listitem> <para>
+Make any Rocks Client Appliance into EC2-Compatible Virtual Machine. Handles bundling and uploading with the Rocks command line.
+</para></listitem>
+
+<listitem><para>
+Defines two new Rocks appliances: A full Development Appliance that can be used to build rolls and a Lightweight Appliance. 
+</para></listitem>
+
+<listitem><para> 
+Extend your local Condor Pool with instances running in Amazon (Requires the Rocks Condor Roll)
+</para></listitem>
+
+<listitem><para>
+Extend your cluster with EC2-based nodes. Using IP Tunnels and 
+your frontend as a router, direct communication between nodes in your local 
+cluster and EC2 nodes. MPI and home area mounts across the extended cluster are
+supported
+</para></listitem> 
+</itemizedlist>
+
+</para>
 
 <para>
 Please visit the <ulink url="http://aws.amazon.com/ec2/">Amazon EC2 

@@ -1,4 +1,4 @@
-# $Id: __init__.py,v 1.4 2010/10/12 04:50:43 phil Exp $
+# $Id: __init__.py,v 1.5 2011/02/14 04:16:08 phil Exp $
 #
 # @Copyright@
 # 
@@ -54,6 +54,9 @@
 # @Copyright@
 #
 # $Log: __init__.py,v $
+# Revision 1.5  2011/02/14 04:16:08  phil
+# Checkpoint
+#
 # Revision 1.4  2010/10/12 04:50:43  phil
 # Remove ec2 constructions with remove host plugin
 # Write an /etc/sysconfig/vtun configuration file
@@ -261,7 +264,7 @@ class Command(command):
 				continue
 			except:
 				added += self.addHost(ec2host)
-		
+				self.rank += 1	
 		#	
 		# sync the config when done
 		#	

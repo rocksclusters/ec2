@@ -19,7 +19,8 @@ to complete all steps.
 <orderedlist>
 <listitem>
 <para>
-<emphasis>Kicktart a Rocks VM Appliance</emphasis>. In Rocks any appliance can be built
+<emphasis>Kicktart a Rocks VM Appliance</emphasis>. In Rocks any appliance
+(except a frontend) can be built
 as a virtual machine.  EC2 supports only single ethernet interface appliances. On Local Cluster. About 10-15 minutes.
 </para>
 </listitem>
