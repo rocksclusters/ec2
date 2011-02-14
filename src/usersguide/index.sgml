@@ -1,10 +1,13 @@
 <!--
-$Id: index.sgml,v 1.3 2010/03/03 17:21:56 phil Exp $
+$Id: index.sgml,v 1.4 2011/02/14 22:39:13 mjk Exp $
 
 @Copyright@
 @Copyright@
 
 $Log: index.sgml,v $
+Revision 1.4  2011/02/14 22:39:13  mjk
+Manuals build again
+
 Revision 1.3  2010/03/03 17:21:56  phil
 Updates
 
@@ -30,7 +33,7 @@ make condor docs look like other rolls' docs
 <book>
 <bookinfo>
 
-	<title> EC2 Roll: Users Guide </title>
+	<title> EC2 Users Guide </title>
 
 	<subtitle>
 		<inlinemediaobject>
@@ -40,11 +43,11 @@ make condor docs look like other rolls' docs
 		</inlinemediaobject>
 	</subtitle>
 
-        <edition>Version &document_version;</edition>
-        <pubdate>&document_pubdate;</pubdate>
+        <edition>&document-version;</edition>
+        <pubdate>&document-pubdate;</pubdate>
         <copyright id="copyright" xreflabel="copyright">
-                <year>&document_year;</year>
-                <holder>&document_copyright;</holder>    
+                <year>&document-year;</year>
+                <holder>&document-copyright;</holder>    
         </copyright>
 
         <releaseinfo>
@@ -53,21 +56,21 @@ make condor docs look like other rolls' docs
 
         <legalnotice>
                 <para>
-                This document is subject to the Rocks License 
+                This document is subject to the &rocks; License 
                 (see <xref linkend="rocks-copyright">).
                 </para>
         </legalnotice>
 
 </bookinfo>
 
-&source_preface;
-&source_installing;
-&source_using;
-&source_credentials;
-&source_building;
-&source_customizing;
-&source_roll-commands;
-&source_appendix;
+&source-preface;
+&source-installing;
+&source-using;
+&source-credentials;
+&source-building;
+&source-customizing;
+&source-roll-commands;
+&source-appendix;
 
 </book>
 
