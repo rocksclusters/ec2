@@ -54,6 +54,9 @@
 		<to>firewall</to>
 	</edge>
 
+	<edge from="lite-client" to="condor-client" arch="i386,x86_64" cond="Condor_Client"/>
+	<edge from="lite-client" to="condor" arch="i386,x86_64" cond="Condor_Client"/>
+
 	<edge from="lite-base">
 		<to>node</to>
 		<to>autofs</to>
