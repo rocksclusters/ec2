@@ -25,7 +25,7 @@ EC2-compatible VMs
 
 # Set up the default tunnel parameters, roles for clients and frontends
 /opt/rocks/bin/rocks add attr vtunListenPort value=6161
-/opt/rocks/bin/rocks add attr vtunServer value=Kickstart_PublicHostname;
+/opt/rocks/bin/rocks add attr vtunServer value=&Kickstart_PublicHostname;
 /opt/rocks/bin/rocks add appliance attr ec2-dynamic vtunRole value=client
 /opt/rocks/bin/rocks add appliance attr ec2-dynamic vtunListenNet value=ec2private
 /opt/rocks/bin/rocks add appliance attr frontend vtunListenNet value=public
