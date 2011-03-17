@@ -66,6 +66,7 @@ that roll is available in .iso form and is called "&document-rollname;.iso".
 $ su - root 
 # rocks add roll &document-rollname;.iso
 # rocks enable roll &document-rollname;
+# cd /export/rocks/install
 # rocks create distro
 # rocks run roll ec2 | bash
 </screen>
