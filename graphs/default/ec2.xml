@@ -45,6 +45,10 @@
 		<to>devel-server</to>
 	</edge>
 
+	<edge from="condor-server">
+		<to>ec2-condor-server</to>
+	</edge>
+
 	<edge from="lite-client">
 		<to>lite-base</to>
 		<to>411-client</to>

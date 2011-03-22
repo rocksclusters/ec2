@@ -1,0 +1,9 @@
+<?xml version="1.0" standalone="no"?>
+
+<kickstart>
+<description> 
+Condor plugin for ec2 configuration. Only referenced if Condor is installed
+</description>
+<package>rocks-ec2-condor-commands</package>
+</kickstart> 
+

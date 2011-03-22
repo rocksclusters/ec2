@@ -1,5 +1,5 @@
 NAME    	= ec2-ami-tools
 VERSION 	= 1.3
-RELEASE 	= 57676
+RELEASE 	= 66634
 DIREXT		= $(VERSION)-$(RELEASE)
 TARBALL_POSTFIX	= tar.gz
