@@ -1,5 +1,5 @@
 <!--
-$Id: appendix.sgml,v 1.5 2011/02/14 22:39:13 mjk Exp $
+$Id: appendix.sgml,v 1.6 2011/03/27 23:51:59 phil Exp $
 
 Appendix for Copyright and License notices
 
@@ -7,6 +7,9 @@ Appendix for Copyright and License notices
 @Copyright@
 
 $Log: appendix.sgml,v $
+Revision 1.6  2011/03/27 23:51:59  phil
+Fixups
+
 Revision 1.5  2011/02/14 22:39:13  mjk
 Manuals build again
 
@@ -41,7 +44,7 @@ Revision 1.1  2006/09/14 23:54:35  mjk
 -->
 
 <appendix id="rocks-copyright" xreflabel="Appendix A: Rocks Copyright">
-<title>&rocks; Copyright</title>
+<title>&document_rocks; Copyright</title>
 <para>
 <screen>
 &rockscopyright;
@@ -52,7 +55,7 @@ Revision 1.1  2006/09/14 23:54:35  mjk
 <appendix>
 <title>Third Party Copyrights and Licenses</title>
 
-&source-roll-copyright-disclaimer;
+&source_roll-copyright-disclaimer;
 
 
 

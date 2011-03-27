@@ -1,10 +1,13 @@
 <!--
-$Id: index.sgml,v 1.5 2011/03/27 23:31:49 phil Exp $
+$Id: index.sgml,v 1.6 2011/03/27 23:51:59 phil Exp $
 
 @Copyright@
 @Copyright@
 
 $Log: index.sgml,v $
+Revision 1.6  2011/03/27 23:51:59  phil
+Fixups
+
 Revision 1.5  2011/03/27 23:31:49  phil
 New style of userguide.
 
@@ -59,7 +62,7 @@ make condor docs look like other rolls' docs
 
         <legalnotice>
                 <para>
-                This document is subject to the &rocks; License 
+                This document is subject to the &document_rocks; License 
                 (see <xref linkend="rocks-copyright">).
                 </para>
         </legalnotice>
