@@ -10,6 +10,9 @@
 
   <changelog>
   $Log: devel-client.xml,v $
+  Revision 1.5  2011/03/27 19:18:33  phil
+  Local Database fixups. Make local DB appear more rational
+
   Revision 1.4  2010/01/15 03:27:29  phil
   Update to use attrs.
   State -- properly builds devel server. Need to look at bundle/upload commands
@@ -26,6 +29,12 @@
   </changelog>
 
 <package>rocks-bittorrent</package>
+<package>alsa-lib-devel</package>
+<package>libxml2.&arch;</package>
+<package>libXxf86misc-devel</package>
+<package>libXaw</package>
+<package>libXaw-devel</package>
+<package>iscsi-initiator-utils</package>
 
 <post>
 <file name="/etc/motd" mode="append">
@@ -48,6 +57,14 @@ fi
 MYSQL_HOME=/opt/rocks/etc /usr/bin/mysqldump -u apache cluster rolls
 </eval>
 </file>
+
+<!-- Do some fixups to the  Devel-Servers local database -->
+/opt/rocks/bin/mysql -u apache cluster -e 'update nodes set name="&hostname;" where ID=1'
+/opt/rocks/bin/rocks set host interface ip &hostname; eth0 &hostaddr;
+/opt/rocks/bin/rocks set host interface name &hostname; eth0 &hostname;
+/opt/rocks/bin/rocks set host membership &hostname; "Development Appliance"
+/opt/rocks/bin/rocks remove host interface &hostname; eth1 
+/opt/rocks/bin/rocks report host &gt; /etc/hosts 
 
 </post>
 </kickstart> 
