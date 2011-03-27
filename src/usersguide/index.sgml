@@ -1,10 +1,13 @@
 <!--
-$Id: index.sgml,v 1.4 2011/02/14 22:39:13 mjk Exp $
+$Id: index.sgml,v 1.5 2011/03/27 23:31:49 phil Exp $
 
 @Copyright@
 @Copyright@
 
 $Log: index.sgml,v $
+Revision 1.5  2011/03/27 23:31:49  phil
+New style of userguide.
+
 Revision 1.4  2011/02/14 22:39:13  mjk
 Manuals build again
 
@@ -43,11 +46,11 @@ make condor docs look like other rolls' docs
 		</inlinemediaobject>
 	</subtitle>
 
-        <edition>&document-version;</edition>
-        <pubdate>&document-pubdate;</pubdate>
+        <edition>&document_version;</edition>
+        <pubdate>&document_pubdate;</pubdate>
         <copyright id="copyright" xreflabel="copyright">
-                <year>&document-year;</year>
-                <holder>&document-copyright;</holder>    
+                <year>&document_year;</year>
+                <holder>&document_copyright;</holder>    
         </copyright>
 
         <releaseinfo>
@@ -63,14 +66,14 @@ make condor docs look like other rolls' docs
 
 </bookinfo>
 
-&source-preface;
-&source-installing;
-&source-using;
-&source-credentials;
-&source-building;
-&source-customizing;
-&source-roll-commands;
-&source-appendix;
+&source_preface;
+&source_installing;
+&source_using;
+&source_credentials;
+&source_building;
+&source_customizing;
+&source_roll-commands;
+&source_appendix;
 
 </book>
 
