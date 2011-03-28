@@ -60,12 +60,12 @@ On first boot, the EC2 roll will complete its configuration.
 <title>Install on Running System</title>
 <para>
 The EC2 Roll can be installed on a running system. The following assumes
-that roll is available in .iso form and is called "&document_rollname;.iso".
+that roll is available in .iso form and is called "&document-rollname;.iso".
 </para>
 <screen>
 $ su - root 
-# rocks add roll &document_rollname;.iso
-# rocks enable roll &document_rollname;
+# rocks add roll &document-rollname;.iso
+# rocks enable roll &document-rollname;
 # cd /export/rocks/install
 # rocks create distro
 # rocks run roll ec2 | bash
