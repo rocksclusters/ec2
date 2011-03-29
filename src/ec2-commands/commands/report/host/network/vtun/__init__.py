@@ -1,4 +1,4 @@
-# $Id: __init__.py,v 1.8 2011/01/15 00:23:30 phil Exp $
+# $Id: __init__.py,v 1.9 2011/03/29 05:52:04 phil Exp $
 # 
 # @Copyright@
 # 
@@ -54,6 +54,9 @@
 # @Copyright@
 #
 # $Log: __init__.py,v $
+# Revision 1.9  2011/03/29 05:52:04  phil
+# Typo.
+#
 # Revision 1.8  2011/01/15 00:23:30  phil
 # Force data type on Database read
 #
@@ -138,7 +141,7 @@ default {
 			binddev = "eth0"
 		self.addOutput(host, '<file name="/opt/vtun/etc/vtund.conf" mode="600">')
 		self.addOutput(host, '<![CDATA[')
-		self.addOutput(host, commonHeader % ((int)port, binddev))
+		self.addOutput(host, commonHeader % (int(port), binddev))
 		
 	def writeCommonTrailer(self, host):
 		self.addOutput(host, ']]>')
