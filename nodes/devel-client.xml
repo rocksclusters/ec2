@@ -10,6 +10,9 @@
 
   <changelog>
   $Log: devel-client.xml,v $
+  Revision 1.6  2011/03/29 05:31:06  phil
+  Packages required to build rocks kernel roll
+
   Revision 1.5  2011/03/27 19:18:33  phil
   Local Database fixups. Make local DB appear more rational
 
@@ -35,6 +38,9 @@
 <package>libXaw</package>
 <package>libXaw-devel</package>
 <package>iscsi-initiator-utils</package>
+<package>pcre-devel</package>
+<package>apr-devel</package>
+<package>httpd-devel</package>
 
 <post>
 <file name="/etc/motd" mode="append">
