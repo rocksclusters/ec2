@@ -2,7 +2,7 @@
 #
 # This file should remain OS independent
 #
-# $Id: bootstrap.sh,v 1.1 2011/03/28 00:10:54 phil Exp $
+# $Id: bootstrap.sh,v 1.2 2011/04/21 00:24:55 phil Exp $
 #
 # @Copyright@
 # 
@@ -58,6 +58,10 @@
 # @Copyright@
 #
 # $Log: bootstrap.sh,v $
+# Revision 1.2  2011/04/21 00:24:55  phil
+# a less invasive bootstrap.
+# Adjust Makefile to work on i386, too.
+#
 # Revision 1.1  2011/03/28 00:10:54  phil
 # Bootstrapping, Roll needs to be installed for usersguide to compile.
 #
@@ -66,5 +70,3 @@
 
 compile_and_install boto 
 compile_and_install ec2-commands 
-gmake roll
-/opt/rocks/bin/rocks add roll ec2*iso

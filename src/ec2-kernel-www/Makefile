@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.5 2010/01/15 03:27:29 phil Exp $
+# $Id: Makefile,v 1.6 2011/04/21 00:24:55 phil Exp $
 #
 # @Copyright@
 # 
@@ -54,6 +54,10 @@
 # @Copyright@
 #
 # $Log: Makefile,v $
+# Revision 1.6  2011/04/21 00:24:55  phil
+# a less invasive bootstrap.
+# Adjust Makefile to work on i386, too.
+#
 # Revision 1.5  2010/01/15 03:27:29  phil
 # Update to use attrs.
 # State -- properly builds devel server. Need to look at bundle/upload commands
@@ -113,7 +117,14 @@ REDHAT.ROOT     = $(PWD)/../../
 -include $(ROCKSROOT)/etc/Rules.mk
 include Rules.mk
 
-MODULES-TAR=$(EC2-MODULES)-$(EC2-NAME)-$(ARCH).tgz
+TESTARCH = i386
+ifeq ($(ARCH),$(TESTARCH))
+MODULEARCH = i686
+else
+MODULEARCH = $(ARCH)
+endif
+
+MODULES-TAR=$(EC2-MODULES)-$(EC2-NAME)-$(MODULEARCH).tgz
 build:
 	echo "/opt/rocks/bin/rocks set attr ec2_kernel vmlinuz-$(EC2-NAME)" > rocks-set-ec2-attrs
 	echo "/opt/rocks/bin/rocks set attr ec2_kernelTar $(MODULES-TAR)" >> rocks-set-ec2-attrs
