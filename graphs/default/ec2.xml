@@ -23,12 +23,6 @@
 		<tail>lite-base</tail>
 	</order>
 
-	<order head="database-security">
-		<tail>devel-server</tail>
-	</order>
-	<order head="autofs">
-		<tail>devel-server</tail>
-	</order>
 	<order head="networking-client">
 		<tail>ec2-client</tail>
 	</order>
@@ -39,11 +33,11 @@
 		<tail>ec2-partition</tail>
 	</order>
 
-	<!-- Graph OO Framework -->
+	<order head="database-schema">
+		<tail>database-sec</tail>
+	</order>
 
-	<edge from="server">
-		<to>devel-server</to>
-	</edge>
+	<!-- Graph OO Framework -->
 
 	<edge from="condor-server">
 		<to>ec2-condor-server</to>
@@ -83,24 +77,14 @@
 		<to>yum</to>
 	</edge>
 
-	<edge from="devel-client">
-		<to>client</to>
-		<to>foundation-server</to>
-		<to>devel</to>
-		<to>rocks-dist</to>
-		<to>database</to>
-		<to>x11</to>
-		<to>snmp-client</to>
-		<to>rocks-devel</to>
-	</edge>
-
 	<!-- Now add EC2 specific Hacks and updates -->
 	<edge from="server">
 		<to>ec2-server</to>
 		<to>ec2-common</to>
 	</edge>
 
-	<edge from="vm-container-client">
+	<!-- ec2 tools on any node that is a Xen Dom0 --> 
+	<edge from="client" cond="xen">
 		<to>ec2-common</to>
 	</edge>
 
