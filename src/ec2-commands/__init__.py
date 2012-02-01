@@ -1,4 +1,4 @@
-# $Id: __init__.py,v 1.1 2012/01/31 22:13:21 nnhuy2 Exp $
+# $Id: __init__.py,v 1.2 2012/02/01 18:10:37 nnhuy2 Exp $
 #
 #
 
@@ -11,6 +11,7 @@ import string
 import rocks.commands
 import boto
 from boto.ec2.connection import EC2Connection
+from boto.ec2.blockdevicemapping import BlockDeviceType, BlockDeviceMapping
 import paramiko
 import subprocess
 
@@ -35,7 +36,6 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                         code with 12 digits
         The following two files are needed only for the "rocks upload bundle"
         access-key -&gt; it contains the AWS access key
-        secret-access-key -&gt; it contains the AWS private access key
 
 	default is ~/.ec2
         </param>
@@ -116,7 +116,73 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
 	    	except IOError:
 	    		print "missing access-key-secret file in " + credentialDir
             		return
+			
 		
+		"""print 'Label root'
+		command = 'ssh -t -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + 'ec2-23-20-26-197.compute-1.amazonaws.com' + ' "e2label /dev/sdh /"'
+		fin, fout = os.popen4(command)
+		
+		print 'Modifying fstab'
+		command = 'ssh -t -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + 'ec2-23-20-26-197.compute-1.amazonaws.com' + ' "rm -rf /mnt/tmp/etc/fstab"'
+		fin, fout = os.popen4(command)
+		command = 'ssh -t -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + 'ec2-23-20-26-197.compute-1.amazonaws.com' + ' "echo \'/dev/sda1 /     ext3    defaults 1 1\' > /mnt/tmp/etc/fstab"'
+		fin, fout = os.popen4(command)
+		command = 'ssh -t -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + 'ec2-23-20-26-197.compute-1.amazonaws.com' + ' "echo \'/dev/sdb  /mnt  ext3    defaults 0 0\' >> /mnt/tmp/etc/fstab"'
+		fin, fout = os.popen4(command)
+		command = 'ssh -t -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + 'ec2-23-20-26-197.compute-1.amazonaws.com' + ' "echo \'none      /dev/pts devpts  gid=5,mode=620 0 0\' >> /mnt/tmp/etc/fstab"'
+		fin, fout = os.popen4(command)
+		command = 'ssh -t -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + 'ec2-23-20-26-197.compute-1.amazonaws.com' + ' "echo \'none      /proc proc    defaults 0 0\' >> /mnt/tmp/etc/fstab"'
+		fin, fout = os.popen4(command)
+ 		command = 'ssh -t -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + 'ec2-23-20-26-197.compute-1.amazonaws.com' + ' "echo \'none      /sys  sysfs   defaults 0 0\' >> /mnt/tmp/etc/fstab"'
+		fin, fout = os.popen4(command)
+
+		return
+
+		print 'Revoke rule from security group'
+		conn.revoke_security_group(group_name=securityGroups, src_security_group_name='default', ip_protocol='tcp', from_port=int(port), to_port=int(port), cidr_ip='0.0.0.0/0')
+
+		print 'Unmount volume'
+		command = 'ssh -t -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + 'ec2-23-20-26-197.compute-1.amazonaws.com' + ' "umount /mnt/tmp"'
+		fin, fout = os.popen4(command)
+		command = 'ssh -t -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + 'ec2-23-20-26-197.compute-1.amazonaws.com' + ' "umount -d /dev/sdh"'
+		fin, fout = os.popen4(command)
+
+		print 'Detaching volume'
+		newVol.detach()
+		while True:
+        		print '.',
+		        sys.stdout.flush()
+			print newVol.volume_state()
+	        	if newVol.volume_state() == 'available':
+			    print 'Volume :' + newVol.id + ' has been successfully detached from instance ' 
+		            break
+        		time.sleep(1.0)
+			newVol.update()
+
+		print 'Creating snapshot from volume' 
+		#TODO: ALlow user to add description for their snapshot. newVol.create_snapshot(description='abc')
+		snapshot = newVol.create_snapshot()		
+		while True:
+        		print '.',
+		        sys.stdout.flush()
+			print snapshot.status
+	        	if snapshot.status == 'completed':
+			    print 'Snapshot :' + snapshot.id + ' has been successfully created from volume ' 
+		            break
+        		time.sleep(1.0)
+			snapshot.update()
+		
+		print 'Register AMI with snapshot ' + snapshot.id
+		ebs = BlockDeviceType(snapshot_id=snapshot.id)
+		block_map = BlockDeviceMapping()
+		block_map['/dev/sda1'] = ebs
+		#TODO allow user to describe their AMI: name, description
+		newAMI = conn.register_image(name='test', description='Test AMI', architecture='x86_64', kernel_id = kernelid, ramdisk_id=ramdiskid, root_device_name='dev/sda1', block_device_map=block_map)
+		print 'New AMI has been successfully created. AMI id : ' + newAMI
+	
+	
+		return"""		
+
 
 		"""print 'Running socat'
 		#Start socat in background
@@ -179,6 +245,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
 		return"""
 			
 		conn = EC2Connection(accessKeyNum, secretAccessKeyNum)
+
 		#print conn.region.name
 		#images = conn.get_all_images()
     		# get image corresponding to this AMI
@@ -188,6 +255,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
     		# by default this will be an t1.micro instance
     		res = image.run(key_name=keypair,security_groups=[securityGroups], kernel_id=kernelId, ramdisk_id=ramdiskId, instance_type=instanceType)
 		#Need to delay few second before running instances[0].update to make sure amazon has created that instance. Otherwise sometime we may get error. TODO: use dowhile loop, time sleep before instances[0].update
+		time.sleep(2.0)
     		print res.instances[0].update()
     		instance = None
     		while True:
@@ -223,7 +291,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
 		        sys.stdout.flush()
 			#print newVol.attachment_state()
 	        	if newVol.attachment_state() == 'attached':
-			    print 'New volume :' + newVol.id + ' has been created successfully attached to instance ' + instance.id
+			    print 'New volume :' + newVol.id + ' has been successfully attached to instance ' + instance.id
 		            break
         		time.sleep(1.0)
 			newVol.update()
@@ -242,7 +310,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
 		print 'Formatting volume'
 		command = 'ssh -t -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + instance.dns_name + ' "yes | mkfs -t ext3 /dev/sdh"'
 		fin, fout = os.popen4(command)
-		print fout.readlines()
+		#print fout.readlines()
     		#stdin, stdout, stderr = ssh.exec_command(command)
 
 		print 'Creating tmp directory on new volume'
@@ -257,6 +325,10 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
 		
 		print 'Granting access to instance'
 		conn.authorize_security_group(group_name=securityGroups, src_security_group_name='default', ip_protocol='tcp', from_port=int(port), to_port=int(port), cidr_ip='0.0.0.0/0')
+		
+		#Open firewall, add port 6000 to iptables
+		command = 'ssh -t -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + instance.dns_name + ' "iptables -I INPUT -p tcp --dport ' + port + ' -j ACCEPT"'
+		fin, fout = os.popen4(command)
 		
 		print 'Running socat'
 		#Start socat in background
@@ -304,16 +376,70 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
 	        print "  depending on your connection to S3"
 	        output = self.command('run.host', [physhost,
 	            "%s/upload-script.sh" % outputpath, 'collate=true'])
-	        print output
+	        #print output
 
-		return
-
-		print 'Label root'
-		command = 'ssh -t -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + instance.dns_name + ' "e2label /dev/xvdh /"'
+		print 'Labeling root'
+		command = 'ssh -t -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + instance.dns_name + ' "e2label /dev/sdh /"'
+		fin, fout = os.popen4(command)
+		
+		print 'Modifying fstab'
+		command = 'ssh -t -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + instance.dns_name + ' "rm -rf /mnt/tmp/etc/fstab"'
+		fin, fout = os.popen4(command)
+		command = 'ssh -t -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + instance.dns_name + ' "echo \'/dev/sda1 /     ext3    defaults 1 1\' > /mnt/tmp/etc/fstab"'
+		fin, fout = os.popen4(command)
+		command = 'ssh -t -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + instance.dns_name + ' "echo \'/dev/sdb  /mnt  ext3    defaults 0 0\' >> /mnt/tmp/etc/fstab"'
+		fin, fout = os.popen4(command)
+		command = 'ssh -t -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + instance.dns_name + ' "echo \'none      /dev/pts devpts  gid=5,mode=620 0 0\' >> /mnt/tmp/etc/fstab"'
+		fin, fout = os.popen4(command)
+		command = 'ssh -t -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + instance.dns_name + ' "echo \'none      /proc proc    defaults 0 0\' >> /mnt/tmp/etc/fstab"'
+		fin, fout = os.popen4(command)
+ 		command = 'ssh -t -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + instance.dns_name + ' "echo \'none      /sys  sysfs   defaults 0 0\' >> /mnt/tmp/etc/fstab"'
 		fin, fout = os.popen4(command)
 
+		print 'Revoke rule from security group'
+		conn.revoke_security_group(group_name=securityGroups, src_security_group_name='default', ip_protocol='tcp', from_port=int(port), to_port=int(port), cidr_ip='0.0.0.0/0')
+
+		print 'Unmount volume'
+		command = 'ssh -t -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + instance.dns_name + ' "umount /mnt/tmp"'
+		fin, fout = os.popen4(command)
+		command = 'ssh -t -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + instance.dns_name + ' "umount -d /dev/sdh"'
+		fin, fout = os.popen4(command)
+
+		print 'Detaching volume'
+		newVol.detach()
+		while True:
+        		print '.',
+		        sys.stdout.flush()
+			#print newVol.volume_state()
+	        	if newVol.volume_state() == 'available':
+			    print 'Volume :' + newVol.id + ' has been successfully detached from instance ' + instance.id
+		            break
+        		time.sleep(1.0)
+			newVol.update()
+
+		print 'Creating snapshot from volume' + newVol.id
+		#TODO: ALlow user to add description for their snapshot. newVol.create_snapshot(description='abc')
+		snapshot = newVol.create_snapshot()		
+		while True:
+        		print '.',
+		        sys.stdout.flush()
+			#print snapshot.status
+	        	if snapshot.status == 'completed':
+			    print 'Snapshot :' + snapshot.id + ' has been successfully created from volume ' + newVol.id
+		            break
+        		time.sleep(1.0)
+			snapshot.update()
 		
-		
+		print 'Register AMI with snapshot ' + snapshot.id
+		ebs = BlockDeviceType()
+		ebs.snapshot_id=snapshot.id
+		block_map = BlockDeviceMapping()
+		block_map['/dev/sda1'] = ebs
+		#TODO allow user to describe their AMI: name, description
+		newAMI = conn.register_image(name='test', description='Test AMI', architecture='x86_64', kernel_id = kernelId, ramdisk_id=ramdiskId, root_device_name='/dev/sda1', block_device_map=block_map)
+		print 'New AMI has been successfully created. AMI id : ' + newAMI
+	
+	
 		return
 		(args, bucket) = self.fillPositionalArgs(('s3bucket',))
 		hosts = self.getHostnames(args)
@@ -431,7 +557,9 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
 	        script = """#!/bin/bash
 IMAGE_DIR=%s
 cd $IMAGE_DIR
-tar cSvf - -C ./ . | socat TCP:%s:%s -""" % (location, dns_name, port)
+tar cSvf - -C ./ . | socat TCP:%s:%s -
+cd /root
+umount $IMAGE_DIR""" % (location, dns_name, port)
 		import tempfile
 		temp = tempfile.mktemp()
 		file = open(temp, 'w')
