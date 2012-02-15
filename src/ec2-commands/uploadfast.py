@@ -1,4 +1,4 @@
-# $Id: uploadfast.py,v 1.1 2012/02/04 00:40:03 nnhuy2 Exp $
+# $Id: uploadfast.py,v 1.2 2012/02/15 00:41:24 nnhuy2 Exp $
 #
 # Minh Ngoc Nhat Huynh nnhuy2@student.monash.edu
 
@@ -10,10 +10,12 @@ import sys
 import string
 import rocks.commands
 import boto
+import boto.ec2
 from boto.ec2.connection import EC2Connection
 from boto.ec2.blockdevicemapping import BlockDeviceType, BlockDeviceMapping
 import paramiko
 import subprocess
+from datetime import datetime
 
 class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.command):
 	"""
@@ -39,7 +41,26 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
 	
 	The keypair file is needed for connecting to receiver instance
 
+	We also need the script to be copied to phyhost. The script will execute udt client and transfer data to receiver instance
+	There are 
+		appclient: c++ code
+		libudt.so: library
+
 	default is ~/.ec2
+        </param>
+
+	<param type='string' name='region'>
+        The region where receiver instance will be boot up.
+	Currently there are 7 regions :
+		US East (Virgina) : us-east-1
+		US West (N.California): us-west-1
+		US West (Oregon) : us-west-2
+		EU West (Ireland) : eu-west-1
+		Asia Pacific (Singapore)  ap-southeast-1
+		Asia Pacific (Tokyo) : ap-northeast-1
+		South America (Sao Paulo) : sa-east-1
+	Please refer to Amazon website for more information
+	default is 'us-east-1'
         </param>
 
 	<param type='string' name='ami'>
@@ -71,7 +92,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
         The type of instance receiver instance will be.
 	Valid entries are t1.micro, m1.large, etc... Please refer to Amazon EC2 for more information.
 
-	default is 't1.micro'
+	default is 'm1.large'
         </param>
 
        	<param type='string' name='outputpath'>
@@ -83,20 +104,19 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
         /state/partition1/ec2/bundles/devel-server-0-0-0
         </param>
 
-	<param type='string' name='port'>
-        This command use socat to transfer files to receiver instance. Socat will listen to this port number.
-
-	default is '5001'
+       	<param type='string' name='snapshotdesc'>
+	Specify snapshot description
+	default is ''
         </param>
 
-       	<param type='string' name='location'>
-	S3 location. Valid entries are:  EU,US,us-west-1,ap-southeast-1
-	default is US.
+       	<param type='string' name='aminame'>
+        Specify new AMI name
+	default is 'Test'
         </param>
 
-       	<param type='string' name='imagename'>
-        The name that was given to the image using rocks create ec2 bundle, if not 
-	specified default is image
+	<param type='string' name='amidesc'>
+        Specify new AMI description
+	default is 'Test'
         </param>
 
         <example cmd='upload ec2 bundlefast devel-server-0-0-0 keypair=rockskeypair'>
@@ -120,16 +140,21 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                 if not keypair:
                         self.abort('missing keypair')
                 
-		(credentialDir, ami, securityGroups, kernelId, ramdiskId, instanceType, outputpath, port) = self.fillParams( 
+		(credentialDir, region, ami, securityGroups, kernelId, ramdiskId, instanceType, outputpath, snapshotDesc, amiName, amiDesc) = self.fillParams( 
 	                    [('credentialdir','/root/.ec2'), 
-	                    ('ami', 'ami-5fb16036'),
+			    ('region', 'us-east-1'),
+	                    ('ami', 'ami-dbd102b2'),
 			    ('securitygroups', 'default'),
 			    ('kernelid', 'aki-e5c1218c'),
 			    ('ramdiskid', 'ari-e3c1218a'),
 		    	    ('instancetype', 'm1.large'),
 			    ('outputpath', ),
-			    ('port', '5001'),
+			    ('snapshotdesc', ''),
+			    ('aminame', 'Test'),
+			    ('amidesc', 'Test')
 	                    ] )
+		#set port to 9000
+		port = 9000
 
 		#Remove trailing slash if exists
 		if credentialDir[-1:] == "/":
@@ -191,9 +216,22 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
 	
 	            outputpath = prefix
 	            outputpath = outputpath + "/ec2/bundles/" + host
+		
 
-			
-		conn = EC2Connection(accessKeyNum, secretAccessKeyNum)
+		#Start udt appserver in background
+		#command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + 'ec2-107-20-70-192.compute-1.amazonaws.com' + ' "bash ~/udt/server.sh"'
+		#fin, fout = os.popen4(command)
+		#print fout.readlines()
+		"""print outputpath	
+		output = os.system( 'ssh %s " bash %s/upload-script.sh"' % ('vm-container-0-1', outputpath))
+
+		return"""
+		
+		#Record	time from booting up a receiver instance to receiver instance become ready for connecting
+		startime = datetime.now()
+
+		conn = boto.ec2.connect_to_region(region, aws_access_key_id=accessKeyNum, aws_secret_access_key=secretAccessKeyNum)
+		#conn = EC2Connection(accessKeyNum, secretAccessKeyNum)
 
 		#print conn.region.name
 		#images = conn.get_all_images()
@@ -216,6 +254,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
 	        	if dns:
 	        	    instance = res.instances[0]
 		            break
+	
 		print 'Instance started. Public DNS: ', instance.dns_name
 		print 'Instance id:', instance.id
 		print 'Instance availability zone: ', instance.placement
@@ -228,6 +267,12 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
 		retval = os.system("bash " + credentialDir + "/ping-script.sh")
 		if retval != 0:
 	            self.abort('Could not run the script on host: ' + physhost )
+
+		endtime = datetime.now()
+		print 'Boot up time : ' + str(endtime - startime)
+
+		#Record	time from attaching new EBS volume to EBS become attached
+		startime = datetime.now()
 
 		print 'Creating new volume and attaching to instance' + instance.id
 		newVol = conn.create_volume(10,instance.placement)
@@ -246,6 +291,21 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
         		time.sleep(1.0)
 			newVol.update()
 
+		endtime = datetime.now()
+		print 'Attchment time : ' + str(endtime - startime)
+		
+		"""print 'Changing to root'
+		command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + instance.dns_name + ' "sudo su"'
+		fin, fout = os.popen4(command)
+		print fout.readlines()
+
+		print 'Installing socat'
+		command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + instance.dns_name + ' "yes | yum install socat"'
+		fin, fout = os.popen4(command)
+		print fout.readlines()"""
+
+		#Record	time doing formatting, creating tmp directory, mounting, granting access
+		startime = datetime.now()
 		print 'Formatting volume'
 		command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + instance.dns_name + ' "yes | mkfs -t ext3 /dev/sdh"'
 		fin, fout = os.popen4(command)
@@ -265,16 +325,19 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
 		#stdin, stdout, stderr = ssh.exec_command(command)
 		
 		print 'Granting access to instance'
-		conn.authorize_security_group(group_name=securityGroups, src_security_group_name='default', ip_protocol='tcp', from_port=int(port), to_port=int(port), cidr_ip='0.0.0.0/0')
+		conn.authorize_security_group(group_name=securityGroups, src_security_group_name='default', ip_protocol='udp', from_port=9000, to_port=9000, cidr_ip='0.0.0.0/0')
+
+		endtime = datetime.now()
+		print 'Formatting, creating tmp dir, mounting time : ' + str(endtime - startime)
 		
 		#Open firewall, add port 6000 to iptables
-		command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + instance.dns_name + ' "iptables -I INPUT -p tcp --dport ' + port + ' -j ACCEPT"'
+		"""command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + instance.dns_name + ' "iptables -I INPUT -p tcp --dport ' + port + ' -j ACCEPT"'
 		fin, fout = os.popen4(command)
-		print fout.readlines()	
-	
-		print 'Running socat'
-		#Start socat in background
-		command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + instance.dns_name + ' "socat TCP-LISTEN:'+port+' EXEC:\'tar -xf - -C /mnt/tmp/\'" &'
+		print fout.readlines()"""
+
+		print 'Running server script'
+		#Start udt appserver in background
+		command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + instance.dns_name + ' "bash ~/udt/server.sh"'
 		fin, fout = os.popen4(command)
 		#print fout.readlines()
 
@@ -317,20 +380,31 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
 	            print "Error output on removing password '%s'" % output
         	    self.terminate(physhost)
 	            self.abort('Problem removing root password. Error: ' + output)
+		
+		#Copying udt script
+		retval = os.system('scp -qr %s %s:%s/ ' % (credentialDir + '/' + 'appclient', physhost, outputpath))
+		retval = os.system('scp -qr %s %s:%s/ ' % (credentialDir + '/' + 'libudt.so', physhost, outputpath))
 
-
-		scriptTemp = self.createUploadScript('/mnt/rocksimage', instance.dns_name, port)
-	        retval = os.system('scp -qr %s %s:%s/upload-script.sh ' % (scriptTemp, physhost,outputpath))
+		scriptTemp = self.createUploadScript('/mnt/rocksimage', instance.dns_name, port, outputpath)
+	        retval = os.system('scp -qr %s %s:%s/upload-script.sh ' % (scriptTemp, physhost, outputpath))
 	        if retval != 0:
 	            self.abort('Could not copy the script to the host: ' + physhost )
 	
 	        # -----------------------     run the script
+		#Record	uploading time
+		startime = datetime.now()
+
 	        #execute the upload script 
 	        print "Running the upload script this step may take 10-20 minutes"
 	        print "  depending on your connection to S3"
 	        #output = self.command('run.host', [physhost,"%s/upload-script.sh" % outputpath, 'collate=true'])
+		output = os.system( 'ssh %s " cat %s/upload-script.sh"' % (physhost, outputpath))
+		print output
 		output = os.system( 'ssh %s " bash %s/upload-script.sh"' % (physhost, outputpath))
 	        #print output
+
+		endtime = datetime.now()
+		print 'Uploading time : ' + str(endtime - startime)
 
 		print 'Labeling root'
 		command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + instance.dns_name + ' "e2label /dev/sdh /"'
@@ -347,7 +421,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
 		print fout.readlines()
 		command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + instance.dns_name + ' "echo \'/dev/sda1 /     ext3    defaults 1 1\' > /mnt/tmp/etc/fstab"'
 		fin, fout = os.popen4(command)
-		command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + instance.dns_name + ' "echo \'/dev/sdb  /mnt  ext3    defaults 0 0\' >> /mnt/tmp/etc/fstab"'
+		command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + instance.dns_name + ' "echo \'none      /mnt  ext3    defaults 0 0\' >> /mnt/tmp/etc/fstab"'
 		fin, fout = os.popen4(command)
 		command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + instance.dns_name + ' "echo \'none      /dev/pts devpts  gid=5,mode=620 0 0\' >> /mnt/tmp/etc/fstab"'
 		fin, fout = os.popen4(command)
@@ -361,14 +435,11 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
 		print fout.readlines()
 	
 		print 'Revoke rule from security group'
-		conn.revoke_security_group(group_name=securityGroups, src_security_group_name='default', ip_protocol='tcp', from_port=int(port), to_port=int(port), cidr_ip='0.0.0.0/0')
+		conn.revoke_security_group(group_name=securityGroups, src_security_group_name='default', ip_protocol='udp', from_port=int(port), to_port=int(port), cidr_ip='0.0.0.0/0')
 
 
 		print 'Unmount volume'
 		command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + instance.dns_name + ' "umount /mnt/tmp"'
-		fin, fout = os.popen4(command)
-		print fout.readlines()
-		command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + instance.dns_name + ' "umount -d /dev/sdh"'
 		fin, fout = os.popen4(command)
 		print fout.readlines()
 
@@ -384,9 +455,12 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
         		time.sleep(1.0)
 			newVol.update()
 
+		#Record	creating snapshot time
+		startime = datetime.now()
+
 		print 'Creating snapshot from volume' + newVol.id
 		#TODO: ALlow user to add description for their snapshot. newVol.create_snapshot(description='abc')
-		snapshot = newVol.create_snapshot()		
+		snapshot = newVol.create_snapshot(description=snapshotDesc)		
 		while True:
         		print '.',
 		        sys.stdout.flush()
@@ -396,29 +470,43 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
 		            break
         		time.sleep(1.0)
 			snapshot.update()
+
+		endtime = datetime.now()
+		print 'Creating snapshot time : ' + str(endtime - startime)
 		
 		print 'Register AMI with snapshot ' + snapshot.id
 		ebs = BlockDeviceType()
 		ebs.snapshot_id=snapshot.id
 		block_map = BlockDeviceMapping()
 		block_map['/dev/sda1'] = ebs
-		#TODO allow user to describe their AMI: name, description
-		newAMI = conn.register_image(name='devdev', description='Test AMI', architecture='x86_64', kernel_id = kernelId, ramdisk_id=ramdiskId, root_device_name='/dev/sda1', block_device_map=block_map)
+		newAMI = conn.register_image(name=amiName, description=amiDesc, architecture='x86_64', kernel_id = kernelId, ramdisk_id=ramdiskId, root_device_name='/dev/sda1', block_device_map=block_map)
 		print 'New AMI has been successfully created. AMI id : ' + newAMI
-	
+
+		# -----------------------     perform clean up
+		print 'Deleting volume'
+		retVal = conn.delete_volume(newVol.id)
+		if retVal:
+			print 'Volume ' + newVol.id + ' has been successfully deleted'
+
+		print 'Terminating receiver instance'
+		#Need to set false to diableApiTermination attr on receiver instance
+		conn.modify_instance_attribute(instance.id, 'disableApiTermination', 'false')
+		conn.terminate_instances([instance.id])
+
 		#tar -czSvf - -C ./ . --exclude "./proc" --exclude "./dev" --exclude "./media" --exclude "./mnt" --exclude "./sys"| socat TCP:%s:%s -
 
-	def createUploadScript(self, location, dns_name, port):
+	def createUploadScript(self, location, dns_name, port, outputpath):
 	        """this function create the script to upload the VM"""
 	        outputFile = ""
 	        script = """#!/bin/bash
-sleep 5
+sleep 15
+export LD_LIBRARY_PATH=%s:$LD_LIBRARY_PATH
 IMAGE_DIR=%s
 cd $IMAGE_DIR
-tar -cSvf - -C ./ . | socat TCP:%s:%s -
+tar -cSf - . | %s %s %s
 cd /root
 umount $IMAGE_DIR
-""" % (location, dns_name, port)
+""" % (outputpath, location, outputpath + '/' + 'appclient', dns_name, port)
 		import tempfile
 		temp = tempfile.mktemp()
 		file = open(temp, 'w')
