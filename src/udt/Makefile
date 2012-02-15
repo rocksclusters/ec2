@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.3 2011/01/13 22:37:19 phil Exp $
+# $Id: Makefile,v 1.4 2012/02/15 21:38:40 nnhuy2 Exp $
 #
 # @Copyright@
 # 
@@ -54,6 +54,9 @@
 # @Copyright@
 #
 # $Log: Makefile,v $
+# Revision 1.4  2012/02/15 21:38:40  nnhuy2
+# *** empty log message ***
+#
 # Revision 1.3  2011/01/13 22:37:19  phil
 # Checkpoint. New version of ami/api tools, condor plugin. lightweight appliance
 #
@@ -87,6 +90,7 @@ PROFILES = udt.sh udt.csh
 build:
 	gunzip -c $(TARBALL_PREFIX).$(VERSION).$(TARBALL_POSTFIX) | $(TAR) -xf -
 	( 							\
+		(cd patch-files && find . -type f | grep -v CVS | cpio -pduv ../);								\
 		cd $(NAME);					\
 		$(MAKE) -e os=LINUX arch=$(UDTARCH);					\
 	)
