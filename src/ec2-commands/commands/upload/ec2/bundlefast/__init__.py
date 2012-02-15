@@ -1,4 +1,4 @@
-# $Id: __init__.py,v 1.1 2012/02/15 21:47:38 nnhuy2 Exp $
+# $Id: __init__.py,v 1.2 2012/02/15 22:20:28 nnhuy2 Exp $
 #
 # Minh Ngoc Nhat Huynh nnhuy2@student.monash.edu
 
@@ -268,7 +268,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
 		#Record	time from attaching new EBS volume to EBS become attached
 		startime = datetime.now()
 
-		print 'Creating new volume and attaching to instance' + instance.id
+		print 'Creating new volume and attaching to instance ' + instance.id
 		newVol = conn.create_volume(10,instance.placement)
 		if newVol.attach(instance.id, '/dev/sdh'):
 			print 'New volume :' + newVol.id + ' has been created'
@@ -348,11 +348,11 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
 	            self.abort('Problem removing root password. Error: ' + output)
 		
 		#Copying udt script to phyhost
-		retval = os.system('scp -qr %s %s:%s/ ' % (credentialDir + '/' + 'appclient', physhost, outputpath))
-		retval = os.system('scp -qr %s %s:%s/ ' % (credentialDir + '/' + 'libudt.so', physhost, outputpath))
+		#retval = os.system('scp -qr %s %s:%s/ ' % (credentialDir + '/' + 'appclient', physhost, outputpath))
+		#retval = os.system('scp -qr %s %s:%s/ ' % (credentialDir + '/' + 'libudt.so', physhost, outputpath))
 
 		#Creating upload script
-		scriptTemp = self.createUploadScript('/mnt/rocksimage', instance.dns_name, port, outputpath)
+		scriptTemp = self.createUploadScript('/mnt/rocksimage', instance.dns_name, port)
 	        retval = os.system('scp -qr %s %s:%s/upload-script.sh ' % (scriptTemp, physhost, outputpath))
 	        if retval != 0:
 	            self.abort('Could not copy the script to the host: ' + physhost )
@@ -365,8 +365,8 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
 	        print "Running the upload script this step may take 10-20 minutes"
 	        print "  depending on your connection to S3"
 	        #output = self.command('run.host', [physhost,"%s/upload-script.sh" % outputpath, 'collate=true'])
-		output = os.system( 'ssh %s " cat %s/upload-script.sh"' % (physhost, outputpath))
-		print output
+		#output = os.system( 'ssh %s " cat %s/upload-script.sh"' % (physhost, outputpath))
+		#print output
 		output = os.system( 'ssh %s " bash %s/upload-script.sh"' % (physhost, outputpath))
 	        #print output
 
@@ -459,18 +459,18 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
 		conn.modify_instance_attribute(instance.id, 'disableApiTermination', 'false')
 		conn.terminate_instances([instance.id])
 
-	def createUploadScript(self, location, dns_name, port, outputpath):
+	def createUploadScript(self, location, dns_name, port):
 	        """this function create the script to upload the VM"""
 	        outputFile = ""
 	        script = """#!/bin/bash
 sleep 15
-export LD_LIBRARY_PATH=%s:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/opt/udt4/lib:$LD_LIBRARY_PATH
 IMAGE_DIR=%s
 cd $IMAGE_DIR
 tar -cSf - . | %s %s %s
 cd /root
 umount $IMAGE_DIR
-""" % (outputpath, location, outputpath + '/' + 'appclient', dns_name, port)
+""" % (location, '/opt/udt4/bin/appclient', dns_name, port)
 		import tempfile
 		temp = tempfile.mktemp()
 		file = open(temp, 'w')
