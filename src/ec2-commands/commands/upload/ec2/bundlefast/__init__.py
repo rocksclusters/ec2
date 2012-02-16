@@ -1,4 +1,4 @@
-# $Id: __init__.py,v 1.2 2012/02/15 22:20:28 nnhuy2 Exp $
+# $Id: __init__.py,v 1.3 2012/02/16 04:22:09 nnhuy2 Exp $
 #
 # Minh Ngoc Nhat Huynh nnhuy2@student.monash.edu
 
@@ -221,6 +221,13 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
 	
 	            outputpath = prefix
 	            outputpath = outputpath + "/ec2/bundles/" + host
+
+		# -------------------      clear the outputpath and mkdir if it doesn't exist
+	        print "Creating output directories"
+        	output = self.command('run.host', [physhost, 'rm -rf %s' % outputpath, 'collate=true' ] )
+	        output = self.command('run.host', [physhost, 'mkdir -p %s' % outputpath, 'collate=true' ] )
+	        if len(output) > 1:
+        	    self.abort('We can not create the directory ' + outputpath + 'please check that is not mounted or used')
 		
 	        if len(output) > 1 :
 	            self.abort("The vm " + host + " is still running (" + output + "). Please shut it down before running this command.")
