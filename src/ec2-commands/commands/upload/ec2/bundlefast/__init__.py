@@ -1,4 +1,4 @@
-# $Id: __init__.py,v 1.6 2012/02/17 02:01:24 clem Exp $
+# $Id: __init__.py,v 1.7 2012/02/18 03:49:37 clem Exp $
 #
 # Minh Ngoc Nhat Huynh nnhuy2@student.monash.edu
 
@@ -124,21 +124,17 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
         """
 
         def run(self, params, args):
-                #print "this is a test"
-                #print "Hello World"
-
                 #AMI = 'ami-5fb16036'
+                debug = False
                 (args, keypair) = self.fillPositionalArgs(('keypair',))
                 hosts = self.getHostnames(args)
 
                 if len(hosts) != 1:     
-                    self.abort('must supply only one host')
+                        self.abort('must supply only one host')
                 else:
-                    host = hosts[0]
-                
+                        host = hosts[0]
                 if not keypair:
                         self.abort('missing keypair')
-                
                 (credentialDir, region, ami, securityGroups, kernelId, ramdiskId, instanceType, outputpath, snapshotDesc, amiName, amiDesc) = self.fillParams( 
                             [('credentialdir','/root/.ec2'), 
                             ('region', 'us-east-1'),
@@ -231,157 +227,127 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                 output = self.command('run.host', [physhost, 'mkdir -p %s' % outputpath, 'collate=true' ] )
                 if len(output) > 1:
                     self.abort('We can not create the directory ' + outputpath + 'please check that is not mounted or used')
-
-                
-                #Record time from booting up a receiver instance to receiver instance become ready for connecting
-                startime = datetime.now()
-
+              
+				#
+				#  -------------                 boot up section             ---------------------------------
+				# 
+                #some timing 
+                globalStartTime = datetime.now()
+                starttime = globalStartTime
+                print 'Launching EC2 instances ...'
+                # Booting up both dump instance and receiver instance
                 conn = boto.ec2.connect_to_region(region, aws_access_key_id=accessKeyNum, aws_secret_access_key=secretAccessKeyNum)
-                
-                # get image corresponding to this AMI
                 image = conn.get_image(ami)
-                print 'Launching EC2 instance ...'
-                # launch an instance using this image, key and security groups
-                # by default this will be an m1.large instance
-                #Boot up both dump instance and receiver instance
                 res = image.run(min_count=2, max_count=2, key_name=keypair,security_groups=[securityGroups], kernel_id=kernelId, ramdisk_id=ramdiskId, instance_type=instanceType)
-                instance = None
-                receiver = None
+                dumpInstance = res.instances[0]
+                receiverInstance = res.instances[1]
                 while True:
-                        time.sleep(5.0)
-                        res.instances[0].update()
-                        res.instances[1].update()
+                        time.sleep(3.0)
+                        dumpInstance.update()
                         print '.',
                         sys.stdout.flush()
-                        dns = res.instances[0].dns_name
-                        dns_receiver = res.instances[1].dns_name
-                        if dns:
-                            instance = res.instances[0]
-                            receiver = res.instances[1] 
-                            break
-        
-                print 'Instance started. Public DNS: ', instance.dns_name
-                print 'Instance id:', instance.id
-                print 'Instance availability zone: ', instance.placement
-                #Stop dump instance
+                        if dumpInstance.state == 'running':
+                                break;
+                dns_dumpInstance = dumpInstance.dns_name
+                print 'Instance dump started. Public DNS: ', dns_dumpInstance, ' Instance ID: ', dumpInstance.id 
+                #now I stop dump instance
                 print 'Stopping dump instance'
-                conn.stop_instances([instance.id], force=True)
+                conn.stop_instances([dumpInstance.id], force=True)
+                while True:
+                        time.sleep(3.0)
+                        dumpInstance.update()
+                        print '.',
+                        sys.stdout.flush()
+                        if dumpInstance.state == 'stopped':
+                                break;
+                print 'Instance dump stopped'
+                bootUpTime = datetime.now() - starttime
 
-                time.sleep(60)
-
-                #Get volume id /dev/sda1 of dump instance
+                #
+                #  -------------                 attach volume section             ---------------------------------
+                # 
+                startime = datetime.now()
+                print 'Detaching volume from dump instance'
+                #Get EBS volume id of dump instance and detach
                 allvols = conn.get_all_volumes()
                 for v in allvols:
-                        #If we find volume attached to /dev/sda1 of dump instance we stop
-                        if v.attach_data.instance_id == instance.id:
+                        if v.attach_data.instance_id == dumpInstance.id:
                                 break
-
-                print 'Detaching dump instance /dev/sda1'
-                """print 'Unmount volume'
-                command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + instance.dns_name + ' "umount /dev/sda1"'
-                fin, fout = os.popen4(command)
-                print fout.readlines()"""
-
-                print 'Detaching volume'
                 v.detach()
                 while True:
                         print '.',
                         sys.stdout.flush()
-                        #print newVol.volume_state()
                         if v.volume_state() == 'available':
-                            print 'Volume :' + v.id + ' has been successfully detached from instance ' + instance.id
                             break
                         time.sleep(1.0)
                         v.update()
-
-                print 'Receiver Instance started. Public DNS: ', receiver.dns_name
-                print 'Receiver Instance id:', receiver.id
-                print 'Receiver availability zone: ', receiver.placement
-                print 'Waiting for receiver instance to be ready' 
-
-                scriptTemp = self.createPingScript(credentialDir + '/' + keypair + '.pem', 'root', receiver.dns_name)
+                print 'Volume sucesfully detached (%s)' % v.id
+                #the other instance should be up but you can never know!!
+                #TODO maybe we can skip this
+                print "Check if receiver instance is ready"
+                while True:
+                        receiverInstance.update()
+                        print '.',
+                        sys.stdout.flush()
+                        if receiverInstance.state == 'running':
+                                break;
+                        time.sleep(3.0)
+                #machine is runnnying let's see if has booted
+                scriptTemp = self.createPingScript(credentialDir + '/' + keypair + '.pem', 'root', receiverInstance.dns_name)
                 retval = os.system('cp %s %s/ping-script.sh' % (scriptTemp, credentialDir))
                 if retval != 0:
                     self.abort('Could not copy the script to ping the host: ' + physhost )
                 retval = os.system("bash " + credentialDir + "/ping-script.sh")
                 if retval != 0:
                     self.abort('Could not run the script on host: ' + physhost )
+                print 'Receiver Instance started. Public DNS: ', receiverInstance.dns_name, ' Instance ID: ', receiverInstance.id
 
-                endtime = datetime.now()
-                print 'Boot up time : ' + str(endtime - startime)
-
-                #Record time from attaching new EBS volume to EBS become attached
-                startime = datetime.now()
-
-                print 'Attaching new volume to receiver instance'
-                if v.attach(receiver.id, '/dev/sdh'):
-                        print 'New volume :' + v.id + ' has been created'
-
+                print 'Attaching dump volume to receiver instance'
+                if v.attach(receiverInstance.id, '/dev/sdh'):
+                        print 'Volume :' + v.id + ' attached'
+                else:
+                        self.abort('Could not attach the volume: ' + str(v.id))
                 while True:
+                        if v.attachment_state() == 'attached':
+                            #time.sleep(5)
+                            print 'New volume :' + v.id + ' has been successfully attached to instance ' + receiverInstance.id
+                            break
+                        time.sleep(3.0)
+                        v.update()
                         print '.',
                         sys.stdout.flush()
-                        #print newVol.attachment_state()
-                        if v.attachment_state() == 'attached':
-                            time.sleep(5)
-                            print 'New volume :' + v.id + ' has been successfully attached to instance ' + receiver.id
-                            break
-                        time.sleep(1.0)
-                        v.update()
+                attachVolumeTime = datetime.now() - starttime
 
-                endtime = datetime.now()
-                print 'Attchment time : ' + str(endtime - startime)
-
-                #Record time doing formatting, creating tmp directory, mounting, granting access
+                #
+                #  -------------                 Set up volume section             ---------------------------------
+                # 
                 startime = datetime.now()
-                print 'Formatting volume'
-                command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + receiver.dns_name + ' "yes | mkfs -t ext3 /dev/sdh"'
+                print 'Formatting volume and mounting'
+                runCommandString = "yes | mkfs -t ext3 /dev/sdh; mkdir -p /mnt/tmp; mount /dev/sdh /mnt/tmp; " +\
+                                   "bash ~/udt/server.sh &; " 
+                command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + receiverInstance.dns_name + ' "' + runCommandString + '"'
                 fin, fout = os.popen4(command)
                 print fout.readlines()
- 
-                print 'Creating tmp directory on new volume'
-                command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + receiver.dns_name + ' "mkdir -p /mnt/tmp"'
-                fin, fout = os.popen4(command)
-                print fout.readlines()
-
-                print 'Mounting new volume'
-                command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + receiver.dns_name + ' "mount /dev/sdh /mnt/tmp"'
-                fin, fout = os.popen4(command)
-                print fout.readlines()
-                
                 print 'Granting access to instance'
                 conn.authorize_security_group(group_name=securityGroups, src_security_group_name='default', ip_protocol='udp', from_port=9000, to_port=9000, cidr_ip='0.0.0.0/0')
-
-                endtime = datetime.now()
-                print 'Formatting, creating tmp dir, mounting time : ' + str(endtime - startime)
-                
-                print 'Running server script'
-                #Start udt appserver
-                command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + receiver.dns_name + ' "bash ~/udt/server.sh"'
-                fin, fout = os.popen4(command)
-                #print fout.readlines()
-
-                print "Mounting file systems"
+		#TODO authorize only the frontend IP as a source IP
+                print "Mounting local file systems"
                 rows = self.db.execute("""select vmd.prefix, vmd.name 
                          from nodes n, vm_disks vmd, vm_nodes vm 
                          where vmd.Vm_Node = vm.id and vm.node = n.id 
                          and n.name = '%s';""" % host)
                 if rows != 1:
-                        self.abort('We can\'t figure out the disk of the virtual' + ' machine %s' % host)
+                        self.abort('We can\'t figure out the disk of the virtual machine %s' % host)
                 (prefix, name) = self.db.fetchall()[0]
                 diskVM = os.path.join(prefix, name)
-        
-        
                 output = self.command('run.host', [physhost, "mkdir -p /mnt/rocksimage", 'collate=true'])
                 if len(output) > 1:
                     self.abort('Problem with making the directory /mnt/rocksimage ' + 'on host ' + physhost + '. Error: ' + output)
-
                 output = self.command('run.host', [physhost, "lomount -diskimage %s -partition 1 /mnt/rocksimage" % diskVM, 'collate=true'])
                 if len(output) > 1:
                     self.abort('Problem mounting ' + diskVM + ' on host ' + physhost + '. Error: ' + output)
-
-                # ------------------------   removing root password
+                #removing root password
                 print "Removing root password"
-                #toremove the password
                 #"sed -i -e 's/root:[^:]\{1,\}:/root:!:/' /etc/shadow"
                 output = self.command('run.host', [physhost, "command=\"sed -i --expression='s/root:[^:]\{1,\}:/root:\!:/' /mnt/rocksimage/etc/shadow\"",'collate=true'])
                 if len(output) > 1:
@@ -389,70 +355,40 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                     print "Error output on removing password '%s'" % output
                     self.terminate(physhost)
                     self.abort('Problem removing root password. Error: ' + output)
-                
-                #Copying udt script to phyhost
-                #retval = os.system('scp -qr %s %s:%s/ ' % (credentialDir + '/' + 'appclient', physhost, outputpath))
-                #retval = os.system('scp -qr %s %s:%s/ ' % (credentialDir + '/' + 'libudt.so', physhost, outputpath))
-
                 #Creating upload script
-                scriptTemp = self.createUploadScript('/mnt/rocksimage', receiver.dns_name, port)
+                scriptTemp = self.createUploadScript('/mnt/rocksimage', receiverInstance.dns_name, port)
                 retval = os.system('scp -qr %s %s:%s/upload-script.sh ' % (scriptTemp, physhost, outputpath))
                 if retval != 0:
                     self.abort('Could not copy the script to the host: ' + physhost )
+                steupVolumeTime = datetime.now() - starttime
         
-                # -----------------------     run the script
-                #Record uploading time
+                #
+                #  -------------                 Upload data section             ---------------------------------
+                # 
                 startime = datetime.now()
-
-                #execute the upload script 
-                print "Running the upload script this step may take 10-20 minutes"
-                print "  depending on your connection to S3"
-                #output = self.command('run.host', [physhost,"%s/upload-script.sh" % outputpath, 'collate=true'])
-                #output = os.system( 'ssh %s " cat %s/upload-script.sh"' % (physhost, outputpath))
-                #print output
+                print "Running the upload script this step may take up to 10 minutes"
                 output = os.system( 'ssh %s " bash %s/upload-script.sh"' % (physhost, outputpath))
-                #print output
+                uploadTime = datetime.now() - startime
 
-                endtime = datetime.now()
-                print 'Uploading time : ' + str(endtime - startime)
-
-                print 'Labeling root'
-                command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + receiver.dns_name + ' "e2label /dev/sdh /"'
+                #
+                #  -------------                 datach volume section             ---------------------------------
+                # 
+                startime = datetime.now()
+                print 'Running the final fixes on the disk'
+                runCommandString = "e2label /dev/sdh /; rm -rf /mnt/tmp/etc/fstab ; " +\
+                                   "echo \'/dev/sda1 /        ext3    defaults       1 1\' > /mnt/tmp/etc/fstab; " +\
+                                   "echo \'none      /mnt     ext3    defaults       0 0\' >> /mnt/tmp/etc/fstab; " +\
+                                   "echo \'devpts    /dev/pts devpts  gid=5,mode=620 0 0\' >> /mnt/tmp/etc/fstab; " +\
+                                   "echo \'proc      /proc    proc    defaults       0 0\' >> /mnt/tmp/etc/fstab; " +\
+                                   "echo \'sysfs     /sys     sysfs   defaults       0 0\' >> /mnt/tmp/etc/fstab; " 
+                if debug:
+                        runCommandString = runCommandString + "cat /mnt/tmp/etc/fstab; "
+                runCommandString = runCommandString + "umount /mnt/tmp "
+                command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + receiverInstance.dns_name + ' "' + runCommandString + '"'
                 fin, fout = os.popen4(command)
                 print fout.readlines()
-
-                command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + receiver.dns_name + ' "e2label /dev/sdh"'
-                fin, fout = os.popen4(command)
-                print fout.readlines()
-                
-                print 'Modifying fstab'
-                command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + receiver.dns_name + ' "rm -rf /mnt/tmp/etc/fstab"'
-                fin, fout = os.popen4(command)
-                print fout.readlines()
-                command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + receiver.dns_name + ' "echo \'/dev/sda1 /     ext3    defaults 1 1\' > /mnt/tmp/etc/fstab"'
-                fin, fout = os.popen4(command)
-                command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + receiver.dns_name + ' "echo \'none      /mnt  ext3    defaults 0 0\' >> /mnt/tmp/etc/fstab"'
-                fin, fout = os.popen4(command)
-                command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + receiver.dns_name + ' "echo \'none      /dev/pts devpts  gid=5,mode=620 0 0\' >> /mnt/tmp/etc/fstab"'
-                fin, fout = os.popen4(command)
-                command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + receiver.dns_name + ' "echo \'none      /proc proc    defaults 0 0\' >> /mnt/tmp/etc/fstab"'
-                fin, fout = os.popen4(command)
-                command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + receiver.dns_name + ' "echo \'none      /sys  sysfs   defaults 0 0\' >> /mnt/tmp/etc/fstab"'
-                fin, fout = os.popen4(command)
-
-                command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + receiver.dns_name + ' "cat /mnt/tmp/etc/fstab"'
-                fin, fout = os.popen4(command)
-                print fout.readlines()
-        
                 print 'Revoke rule from security group'
                 conn.revoke_security_group(group_name=securityGroups, src_security_group_name='default', ip_protocol='udp', from_port=int(port), to_port=int(port), cidr_ip='0.0.0.0/0')
-
-
-                print 'Unmount volume'
-                command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + receiver.dns_name + ' "umount /mnt/tmp"'
-                fin, fout = os.popen4(command)
-                print fout.readlines()
-
                 print 'Detaching volume'
                 v.detach()
                 while True:
@@ -460,35 +396,36 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                         sys.stdout.flush()
                         #print newVol.volume_state()
                         if v.volume_state() == 'available':
-                            print 'Volume :' + v.id + ' has been successfully detached from instance ' + receiver.id
+                            print 'Volume :' + v.id + ' has been successfully detached from instance ' + receiverInstance.id
                             break
                         time.sleep(1.0)
                         v.update()
-
                 #Re-attach vol to /dev/sda1 of dump instance
-                if v.attach(instance.id, '/dev/sda1'):
+                if v.attach(dumpInstance.id, '/dev/sda1'):
                         print 'New volume :' + v.id + ' has been created'
-
                 while True:
                         print '.',
                         sys.stdout.flush()
-                        #print newVol.attachment_state()
                         if v.attachment_state() == 'attached':
                             time.sleep(5)
-                            print 'New volume :' + v.id + ' has been successfully attached to instance ' + instance.id
+                            print 'New volume :' + v.id + ' has been successfully attached to instance ' + dumpInstance.id
                             break
                         time.sleep(1.0)
                         v.update()
-
-                endtime = datetime.now()
-
-                #Turn back on dump instance
-                conn.start_instances([instance.id])
-
                 print 'Terminating receiver instance'
                 #Need to set false to diableApiTermination attr on receiver instance
-                conn.modify_instance_attribute(receiver.id, 'disableApiTermination', 'false')
-                conn.terminate_instances([receiver.id])
+                conn.modify_instance_attribute(receiverInstance.id, 'disableApiTermination', 'false')
+                conn.terminate_instances([receiverInstance.id])
+                detachVolumeTime = datetime.now() - starttime 
+                print 'Boot up time: ' + str(bootUpTime.seconds)
+                print 'Attach Volume time : ' + str(attachVolumeTime.seconds)
+                print "Detaching volume time: " + str(detachVolumeTime.seconds)
+                print 'Setup Volume time: ' + str(setupVolumeTime.seconds)
+                print 'Uploading time: ' + str(uploadTime.seconds)
+                #Turn back on dump instance
+                #TODO will have to be uncomment
+                #conn.start_instances([dumpInstance.id])
+                print "Total execution time is: ", (datetime.now() - globalStartTime).seconds
 
         def createUploadScript(self, location, dns_name, port):
                 """this function create the script to upload the VM"""
@@ -512,7 +449,7 @@ umount $IMAGE_DIR
         
         
         def createPingScript(self, key_pair_file, user, dns_name):
-                """this function create the script to upload the VM"""
+                """this function create the script to verify that the VM can be sshed"""
                 outputFile = ""
                 script = """#!/bin/bash
 while ! ssh -o StrictHostKeyChecking=no -q -i %s %s@%s true; do
