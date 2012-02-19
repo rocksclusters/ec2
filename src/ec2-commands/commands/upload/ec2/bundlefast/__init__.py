@@ -1,4 +1,4 @@
-# $Id: __init__.py,v 1.7 2012/02/18 03:49:37 clem Exp $
+# $Id: __init__.py,v 1.8 2012/02/19 01:07:30 clem Exp $
 #
 # Minh Ngoc Nhat Huynh nnhuy2@student.monash.edu
 
@@ -228,9 +228,9 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                 if len(output) > 1:
                     self.abort('We can not create the directory ' + outputpath + 'please check that is not mounted or used')
               
-				#
-				#  -------------                 boot up section             ---------------------------------
-				# 
+                #
+                #  -------------                 boot up section             ---------------------------------
+                # 
                 #some timing 
                 globalStartTime = datetime.now()
                 starttime = globalStartTime
@@ -266,7 +266,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                 #
                 #  -------------                 attach volume section             ---------------------------------
                 # 
-                startime = datetime.now()
+                starttime = datetime.now()
                 print 'Detaching volume from dump instance'
                 #Get EBS volume id of dump instance and detach
                 allvols = conn.get_all_volumes()
@@ -321,16 +321,16 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                 #
                 #  -------------                 Set up volume section             ---------------------------------
                 # 
-                startime = datetime.now()
+                starttime = datetime.now()
                 print 'Formatting volume and mounting'
                 runCommandString = "yes | mkfs -t ext3 /dev/sdh; mkdir -p /mnt/tmp; mount /dev/sdh /mnt/tmp; " +\
-                                   "bash ~/udt/server.sh &; " 
+                                   "bash ~/udt/server.sh </dev/null >/dev/null 2>&1 & " 
                 command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + receiverInstance.dns_name + ' "' + runCommandString + '"'
                 fin, fout = os.popen4(command)
                 print fout.readlines()
                 print 'Granting access to instance'
                 conn.authorize_security_group(group_name=securityGroups, src_security_group_name='default', ip_protocol='udp', from_port=9000, to_port=9000, cidr_ip='0.0.0.0/0')
-		#TODO authorize only the frontend IP as a source IP
+                #TODO authorize only the frontend IP as a source IP
                 print "Mounting local file systems"
                 rows = self.db.execute("""select vmd.prefix, vmd.name 
                          from nodes n, vm_disks vmd, vm_nodes vm 
@@ -360,7 +360,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                 retval = os.system('scp -qr %s %s:%s/upload-script.sh ' % (scriptTemp, physhost, outputpath))
                 if retval != 0:
                     self.abort('Could not copy the script to the host: ' + physhost )
-                steupVolumeTime = datetime.now() - starttime
+                setupVolumeTime = datetime.now() - starttime
         
                 #
                 #  -------------                 Upload data section             ---------------------------------
@@ -373,7 +373,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                 #
                 #  -------------                 datach volume section             ---------------------------------
                 # 
-                startime = datetime.now()
+                starttime = datetime.now()
                 print 'Running the final fixes on the disk'
                 runCommandString = "e2label /dev/sdh /; rm -rf /mnt/tmp/etc/fstab ; " +\
                                    "echo \'/dev/sda1 /        ext3    defaults       1 1\' > /mnt/tmp/etc/fstab; " +\
@@ -383,7 +383,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                                    "echo \'sysfs     /sys     sysfs   defaults       0 0\' >> /mnt/tmp/etc/fstab; " 
                 if debug:
                         runCommandString = runCommandString + "cat /mnt/tmp/etc/fstab; "
-                runCommandString = runCommandString + "umount /mnt/tmp "
+                runCommandString = runCommandString + "umount -l /mnt/tmp "
                 command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + receiverInstance.dns_name + ' "' + runCommandString + '"'
                 fin, fout = os.popen4(command)
                 print fout.readlines()
@@ -419,9 +419,9 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                 detachVolumeTime = datetime.now() - starttime 
                 print 'Boot up time: ' + str(bootUpTime.seconds)
                 print 'Attach Volume time : ' + str(attachVolumeTime.seconds)
-                print "Detaching volume time: " + str(detachVolumeTime.seconds)
                 print 'Setup Volume time: ' + str(setupVolumeTime.seconds)
                 print 'Uploading time: ' + str(uploadTime.seconds)
+                print "Detaching volume time: " + str(detachVolumeTime.seconds)
                 #Turn back on dump instance
                 #TODO will have to be uncomment
                 #conn.start_instances([dumpInstance.id])
