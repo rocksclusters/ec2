@@ -1,4 +1,4 @@
-# $Id: __init__.py,v 1.9 2012/02/21 19:39:17 clem Exp $
+# $Id: __init__.py,v 1.10 2012/02/21 21:35:05 clem Exp $
 #
 # Minh Ngoc Nhat Huynh nnhuy2@student.monash.edu
 
@@ -91,7 +91,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
         The type of instance receiver instance will be.
         Valid entries are t1.micro, m1.large, etc... Please refer to Amazon EC2 for more information.
 
-        default is 'm1.large'
+        default is 't1.micro'
         </param>
 
         <param type='string' name='snapshotdesc'>
@@ -311,15 +311,6 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                 output = self.command('run.host', [physhost, "lomount -diskimage %s -partition 1 /mnt/rocksimage" % diskVM, 'collate=true'])
                 if len(output) > 1:
                     self.abort('Problem mounting ' + diskVM + ' on host ' + physhost + '. Error: ' + output)
-                #removing root password
-                print "Removing root password"
-                #"sed -i -e 's/root:[^:]\{1,\}:/root:!:/' /etc/shadow"
-                output = self.command('run.host', [physhost, "command=\"sed -i --expression='s/root:[^:]\{1,\}:/root:\!:/' /mnt/rocksimage/etc/shadow\"",'collate=true'])
-                if len(output) > 1:
-                    #aborting
-                    print "Error output on removing password '%s'" % output
-                    self.terminate(physhost)
-                    self.abort('Problem removing root password. Error: ' + output)
                 #Creating upload script
                 scriptTemp = self.createUploadScript('/mnt/rocksimage', receiverInstance.dns_name, port)
                 retval = os.system('scp -qr %s %s:%s/upload-script.sh ' % (scriptTemp, physhost, tempDir))
@@ -340,12 +331,14 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                 # 
                 starttime = datetime.now()
                 print 'Running the final fixes on the disk'
+                #removing root password, fixing fstab, labeling disk
                 runCommandString = "e2label /dev/sdh /; rm -rf /mnt/tmp/etc/fstab ; " +\
                                    "echo \'/dev/sda1 /        ext3    defaults       1 1\' > /mnt/tmp/etc/fstab; " +\
                                    "echo \'none      /mnt     ext3    defaults       0 0\' >> /mnt/tmp/etc/fstab; " +\
                                    "echo \'devpts    /dev/pts devpts  gid=5,mode=620 0 0\' >> /mnt/tmp/etc/fstab; " +\
                                    "echo \'proc      /proc    proc    defaults       0 0\' >> /mnt/tmp/etc/fstab; " +\
-                                   "echo \'sysfs     /sys     sysfs   defaults       0 0\' >> /mnt/tmp/etc/fstab; " 
+                                   "echo \'sysfs     /sys     sysfs   defaults       0 0\' >> /mnt/tmp/etc/fstab; " +\
+                                   "sed -i --expression='s/root:[^:]\{1,\}:/root:\!:/' /mnt/tmp/etc/shadow ; "
                 if debug:
                         runCommandString = runCommandString + "cat /mnt/tmp/etc/fstab; "
                 runCommandString = runCommandString + "umount -l /mnt/tmp "
