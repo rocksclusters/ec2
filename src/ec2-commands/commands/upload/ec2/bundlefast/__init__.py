@@ -1,4 +1,4 @@
-# $Id: __init__.py,v 1.8 2012/02/19 01:07:30 clem Exp $
+# $Id: __init__.py,v 1.9 2012/02/21 19:39:17 clem Exp $
 #
 # Minh Ngoc Nhat Huynh nnhuy2@student.monash.edu
 
@@ -94,32 +94,20 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
         default is 'm1.large'
         </param>
 
-        <param type='string' name='outputpath'>
-        The base path where the bundled VM is located. Same as outputpath in the 
-        create bundle command. This is relative to physical host where  
-        that host the bundled VM. 
-        If not specified it will use the lagest partition available on the physical host 
-        and it will add the /ec2/bundles/ to the base path, for example 
-        /state/partition1/ec2/bundles/devel-server-0-0-0
-        </param>
-
         <param type='string' name='snapshotdesc'>
         Specify snapshot description
         default is ''
         </param>
 
-        <param type='string' name='aminame'>
-        Specify new AMI name
-        default is 'Test'
+        <param type='string' name='instID'>
+        Specify an already running EBS root instance you want to use 
+	to upload the data into
+        Alert: all the data stored on this VM will be wiped out!
+	TODO this function is not yet implemented
         </param>
 
-        <param type='string' name='amidesc'>
-        Specify new AMI description
-        default is 'Test'
-        </param>
-
-        <example cmd='upload ec2 bundlefast devel-server-0-0-0 keypair=rockskeypair aminame=rocksebs'>
-        This will upload files on VM to receiver instance, detach volume, take snapshot and register new AMI 
+        <example cmd='upload ec2 bundlefast devel-server-0-0-0 keypair=rockskeypair '>
+        This will upload files on VM to receiver instance, detach volume
         </example>
         """
 
@@ -135,7 +123,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                         host = hosts[0]
                 if not keypair:
                         self.abort('missing keypair')
-                (credentialDir, region, ami, securityGroups, kernelId, ramdiskId, instanceType, outputpath, snapshotDesc, amiName, amiDesc) = self.fillParams( 
+                (credentialDir, region, ami, securityGroups, kernelId, ramdiskId, instanceType, snapshotDesc, instID ) = self.fillParams( 
                             [('credentialdir','/root/.ec2'), 
                             ('region', 'us-east-1'),
                             ('ami', 'ami-dbd102b2'),
@@ -143,10 +131,8 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                             ('kernelid', 'aki-e5c1218c'),
                             ('ramdiskid', 'ari-e3c1218a'),
                             ('instancetype', 't1.micro'),
-                            ('outputpath', ),
                             ('snapshotdesc', ''),
-                            ('aminame', 'Test'),
-                            ('amidesc', 'Test')
+                            ('instID', ''),
                             ] )
         
                 #
@@ -203,31 +189,8 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                 except IOError:
                         print "missing access-key-secret file in " + credentialDir
                         return  
-                                
-                if not outputpath:
-                    # find the largest partition on the remote node
-                    # and use it as the directory prefix
-                    import rocks.vm
-                    vm = rocks.vm.VM(self.db)
-        
-                    vbd_type = 'file'
-                    prefix = vm.getLargestPartition(physhost)
-        
-                    if not prefix:
-                        self.abort('could not find a partition on '
-                            + 'host (%s) to hold the ' % host
-                            + 'VM\'s bundle')
-        
-                    outputpath = prefix
-                    outputpath = outputpath + "/ec2/bundles/" + host
-
-                # -------------------      clear the outputpath and mkdir if it doesn't exist
-                print "Creating output directories"
-                output = self.command('run.host', [physhost, 'rm -rf %s' % outputpath, 'collate=true' ] )
-                output = self.command('run.host', [physhost, 'mkdir -p %s' % outputpath, 'collate=true' ] )
-                if len(output) > 1:
-                    self.abort('We can not create the directory ' + outputpath + 'please check that is not mounted or used')
-              
+             
+                tempDir = "/tmp" 
                 #
                 #  -------------                 boot up section             ---------------------------------
                 # 
@@ -292,16 +255,6 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                         if receiverInstance.state == 'running':
                                 break;
                         time.sleep(3.0)
-                #machine is runnnying let's see if has booted
-                scriptTemp = self.createPingScript(credentialDir + '/' + keypair + '.pem', 'root', receiverInstance.dns_name)
-                retval = os.system('cp %s %s/ping-script.sh' % (scriptTemp, credentialDir))
-                if retval != 0:
-                    self.abort('Could not copy the script to ping the host: ' + physhost )
-                retval = os.system("bash " + credentialDir + "/ping-script.sh")
-                if retval != 0:
-                    self.abort('Could not run the script on host: ' + physhost )
-                print 'Receiver Instance started. Public DNS: ', receiverInstance.dns_name, ' Instance ID: ', receiverInstance.id
-
                 print 'Attaching dump volume to receiver instance'
                 if v.attach(receiverInstance.id, '/dev/sdh'):
                         print 'Volume :' + v.id + ' attached'
@@ -316,21 +269,33 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                         v.update()
                         print '.',
                         sys.stdout.flush()
+                #machine is runnnying let's see if has booted
+                scriptTemp = self.createSSHScript(credentialDir + '/' + keypair + '.pem', 'root', receiverInstance.dns_name)
+                retval = os.system('cp %s %s/ping-script.sh' % (scriptTemp, credentialDir))
+                if retval != 0:
+                    self.abort('Could not copy the script to ping the host: ' + physhost )
+                retval = os.system("bash " + credentialDir + "/ping-script.sh")
+                if retval != 0:
+                    self.abort('Could not run the script on host: ' + physhost )
+                print 'Receiver Instance started. Public DNS: ', receiverInstance.dns_name, ' Instance ID: ', receiverInstance.id
                 attachVolumeTime = datetime.now() - starttime
 
                 #
                 #  -------------                 Set up volume section             ---------------------------------
                 # 
                 starttime = datetime.now()
+                print 'Granting access to instance'
+                #TODO authorize only the frontend IP as a source IP 
+                try:
+                        conn.authorize_security_group(group_name=securityGroups, src_security_group_name='default', ip_protocol='udp', from_port=9000, to_port=9000, cidr_ip='0.0.0.0/0')
+		except boto.exception.EC2ResponseError:
+                        print "Firewall rules is already present, not a problem"
                 print 'Formatting volume and mounting'
                 runCommandString = "yes | mkfs -t ext3 /dev/sdh; mkdir -p /mnt/tmp; mount /dev/sdh /mnt/tmp; " +\
                                    "bash ~/udt/server.sh </dev/null >/dev/null 2>&1 & " 
                 command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + receiverInstance.dns_name + ' "' + runCommandString + '"'
                 fin, fout = os.popen4(command)
                 print fout.readlines()
-                print 'Granting access to instance'
-                conn.authorize_security_group(group_name=securityGroups, src_security_group_name='default', ip_protocol='udp', from_port=9000, to_port=9000, cidr_ip='0.0.0.0/0')
-                #TODO authorize only the frontend IP as a source IP
                 print "Mounting local file systems"
                 rows = self.db.execute("""select vmd.prefix, vmd.name 
                          from nodes n, vm_disks vmd, vm_nodes vm 
@@ -357,7 +322,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                     self.abort('Problem removing root password. Error: ' + output)
                 #Creating upload script
                 scriptTemp = self.createUploadScript('/mnt/rocksimage', receiverInstance.dns_name, port)
-                retval = os.system('scp -qr %s %s:%s/upload-script.sh ' % (scriptTemp, physhost, outputpath))
+                retval = os.system('scp -qr %s %s:%s/upload-script.sh ' % (scriptTemp, physhost, tempDir))
                 if retval != 0:
                     self.abort('Could not copy the script to the host: ' + physhost )
                 setupVolumeTime = datetime.now() - starttime
@@ -367,7 +332,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                 # 
                 startime = datetime.now()
                 print "Running the upload script this step may take up to 10 minutes"
-                output = os.system( 'ssh %s " bash %s/upload-script.sh"' % (physhost, outputpath))
+                output = os.system( 'ssh %s " bash %s/upload-script.sh"' % (physhost, tempDir))
                 uploadTime = datetime.now() - startime
 
                 #
@@ -386,6 +351,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                 runCommandString = runCommandString + "umount -l /mnt/tmp "
                 command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + receiverInstance.dns_name + ' "' + runCommandString + '"'
                 fin, fout = os.popen4(command)
+		#TODO no need to print this out
                 print fout.readlines()
                 print 'Revoke rule from security group'
                 conn.revoke_security_group(group_name=securityGroups, src_security_group_name='default', ip_protocol='udp', from_port=int(port), to_port=int(port), cidr_ip='0.0.0.0/0')
@@ -431,7 +397,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                 """this function create the script to upload the VM"""
                 outputFile = ""
                 script = """#!/bin/bash
-sleep 15
+#sleep 5
 export LD_LIBRARY_PATH=/opt/udt4/lib:$LD_LIBRARY_PATH
 IMAGE_DIR=%s
 cd $IMAGE_DIR
@@ -448,7 +414,7 @@ umount $IMAGE_DIR
                 return temp
         
         
-        def createPingScript(self, key_pair_file, user, dns_name):
+        def createSSHScript(self, key_pair_file, user, dns_name):
                 """this function create the script to verify that the VM can be sshed"""
                 outputFile = ""
                 script = """#!/bin/bash
