@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.1 2010/10/04 20:47:14 phil Exp $
+# $Id: Makefile,v 1.2 2012/06/14 22:06:34 clem Exp $
 #
 # @Copyright@
 #
@@ -57,18 +57,30 @@
 
 REDHAT.ROOT = $(PWD)/../../
 PYTHON-SCRIPT-DIR = $(ROOT)/$(PKGROOT)/bin
-PYTHON-LIB-DIR = $(ROOT)/$(PKGROOT)/lib/python2.4/site-packages
+PYTHON-LIB-DIR = $(ROOT)/$(PY.ROCKS)
 PYTHON-INSTALL-OPTS = --install-scripts=$(PYTHON-SCRIPT-DIR) --install-lib=$(PYTHON-LIB-DIR)
 
 -include $(ROCKSROOT)/etc/Rules.mk
 
 build:
+	echo $(ROOT)/$(PY.ROCKS)
+	echo $(ROOT)/$(PY.ROCKS)
+	echo $(ROOT)/$(PY.ROCKS)
+	echo $(ROOT)/$(PY.ROCKS)
+	echo $(ROOT)/$(PY.ROCKS)
+	echo $(ROOT)/$(PY.ROCKS)
+	echo $(ROOT)/$(PY.ROCKS)
+	echo $(ROOT)/$(PY.ROCKS)
+	echo $(ROOT)/$(PY.ROCKS)
+	echo $(ROOT)/$(PY.ROCKS)
+	echo $(ROOT)/$(PY.ROCKS)
+	echo $(ROOT)/$(PY.ROCKS)
 	tar zxvf $(NAME)-$(VERSION).tar.gz
 	tar zxvf $(HASHNAME)-$(HASHVERSION).tar.gz
 
 build-dirs:
 	mkdir -p $(ROOT)/$(PKGROOT)/bin
-	mkdir -p $(ROOT)/$(PKGROOT)/lib/python2.4/site-packages
+	mkdir -p $(ROOT)/$(PY.ROCKS)
 
 install:: build-dirs 
 	( \
@@ -81,7 +93,7 @@ install:: build-dirs
 	  cd $(HASHNAME)-$(HASHVERSION); \
 	  PYTHONPATH=$(PYTHON-LIB-DIR) python setup.py install $(PYTHON-INSTALL-OPTS); \
 	)
-	find $(PYTHON-SCRIPT-DIR) -type f -exec sed -i 's#/usr/bin/python#/opt/rocks/bin/python2.4#' {} \; -print
+	find $(PYTHON-SCRIPT-DIR) -type f -exec sed -i 's#/usr/bin/python#$(PY.PATH)#' {} \; -print
 
 clean::
 	rm -rf $(NAME)-$(VERSION)
