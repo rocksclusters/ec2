@@ -1,8 +1,11 @@
-# $Id: __init__.py,v 1.5 2010/09/09 17:04:05 phil Exp $
+# $Id: __init__.py,v 1.6 2012/06/14 22:07:03 clem Exp $
 #
 # Luca Clementi clem@sdsc.edu
 #
 # $Log: __init__.py,v $
+# Revision 1.6  2012/06/14 22:07:03  clem
+# porting ec2 bundle command on rocks6
+#
 # Revision 1.5  2010/09/09 17:04:05  phil
 # EC2 changed behaviour now have to explictly tell it to generate a valid fstab.
 #
@@ -119,11 +122,12 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.create.comman
         #
         #let's check that the machine is not running
 	print 'physhost is %s; host is %s'  %  (physhost,host)
-        output = self.command('run.host', [ physhost,
-            '/usr/sbin/xm list | grep %s' % host, 'collate=true' ] )
+	import rocks.commands.list.host.vm
+	a = rocks.commands.list.host.vm.Command(None)
+	state = a.getStatus( physhost, host)
 
-        if len(output) > 1 :
-            self.abort("The vm " + host + " is still running (" + output + 
+        if state != 'nostate':
+            rocks.commands.Abort("The vm " + host + " is still running (" + state + 
                         "). Please shut it down before running this command.")
 
         #which outputpath should we use...???
@@ -285,6 +289,3 @@ echo bundling...
             self.abort('Problem mounting /mnt/rocksimage on host ' +
                 physhost + '. Error: ' + output)
 
-RollName = "ec2"
-
-RollName = "ec2"

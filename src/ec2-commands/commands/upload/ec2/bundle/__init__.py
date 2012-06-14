@@ -1,10 +1,13 @@
-# $Id: __init__.py,v 1.6 2010/09/04 04:03:30 phil Exp $
+# $Id: __init__.py,v 1.7 2012/06/14 22:07:03 clem Exp $
 #
 # Philip Papadopoulos - ppapadopoulos@ucsd.edu
 # many thanks to: 
 # Luca Clementi clem@sdsc.edu
 #
 # $Log: __init__.py,v $
+# Revision 1.7  2012/06/14 22:07:03  clem
+# porting ec2 bundle command on rocks6
+#
 # Revision 1.6  2010/09/04 04:03:30  phil
 # Add location so we can upload to different EC2 regions.
 #
@@ -186,4 +189,3 @@ echo uploading ...
 		os.chmod(temp, stat.S_IRWXU)
 		return temp
 
-RollName = "ec2"
