@@ -87,6 +87,11 @@
 	<edge from="client" cond="xen">
 		<to>ec2-common</to>
 	</edge>
+	<!-- ec2 tools on any node that is a kvm hosting machine --> 
+	<edge from="client" cond="kvm">
+		<to>ec2-common</to>
+	</edge>
+
 
 	<edge from="lite-client" cond="ec2_enable">
 		<to>ec2-client</to>

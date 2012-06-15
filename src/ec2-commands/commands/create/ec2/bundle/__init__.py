@@ -1,8 +1,12 @@
-# $Id: __init__.py,v 1.6 2012/06/14 22:07:03 clem Exp $
+# $Id: __init__.py,v 1.7 2012/06/15 01:50:54 clem Exp $
 #
 # Luca Clementi clem@sdsc.edu
 #
 # $Log: __init__.py,v $
+# Revision 1.7  2012/06/15 01:50:54  clem
+# ported most of the create bundle command to rocks 6/5
+# minor fix to the graph
+#
 # Revision 1.6  2012/06/14 22:07:03  clem
 # porting ec2 bundle command on rocks6
 #
@@ -36,7 +40,7 @@ import rocks.commands
 
 
 class Command(rocks.commands.HostArgumentProcessor, rocks.commands.create.command):
-    """
+	"""
         Create a Amazon ec2 bundle from a Rocks VM
         Make sure that the given virtual machine is not running before 
         executing this command.
@@ -78,172 +82,183 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.create.comman
         </example>
 	"""
 
-    def run(self, params, args):
-        hosts = self.getHostnames(args)
-
-        #some arguments parsing
-        if len(hosts) != 1:	
-            self.abort('must supply only one host')
-        else:
-            host = hosts[0]
-
-        (credentialDir, outputpath, imagename) = self.fillParams( 
-                    [('credentialdir', ), 
-                    ('outputpath', ) ,
-                    ('imagename', )
-                    ] )
+	def run(self, params, args):
+		hosts = self.getHostnames(args)
 		
-        if not credentialDir:
+		#some arguments parsing
+		if len(hosts) != 1:	
+			self.abort('must supply only one host')
+		else:
+			host = hosts[0]
+		
+		(credentialDir, outputpath, imagename) = self.fillParams( 
+		            [('credentialdir', ), 
+		            ('outputpath', ) ,
+		            ('imagename', )
+		            ] )
+			
+		if not credentialDir:
 			credentialDir = "~/.ec2/"
-
-
-        if not imagename:
-            imagename = ""
 		
-        #
-        # the name of the physical host that will boot
-        # this VM host
-        #
-        rows = self.db.execute("""select vn.physnode from
-            vm_nodes vn, nodes n where n.name = '%s'
-            and n.id = vn.node""" % (host))
-        if rows == 1:
-            physnodeid, = self.db.fetchone()
-        else:
-             self.abort("Impossible to fetch the physical node.")
-        rows = self.db.execute("""select name from nodes where
-            id = %s""" % (physnodeid))
-        if rows == 1:
-            physhost, = self.db.fetchone()
-        else:
-            self.abort("Impossible to fetch the physical node.")
+		
+		if not imagename:
+			imagename = ""
+			
+		#
+		# the name of the physical host that will boot
+		# this VM host
+		#
+		rows = self.db.execute("""select vn.physnode from
+			vm_nodes vn, nodes n where n.name = '%s'
+			and n.id = vn.node""" % (host))
+		if rows == 1:
+			physnodeid, = self.db.fetchone()
+		else:
+			self.abort("Impossible to fetch the physical node.")
+		rows = self.db.execute("""select name from nodes where
+			id = %s""" % (physnodeid))
+		if rows == 1:
+			physhost, = self.db.fetchone()
+		else:
+			self.abort("Impossible to fetch the physical node.")
+		
+		#ok we have to bunble the vm host runnning on physhost
+		#
+		#let's check that the machine is not running
+		print 'physhost is %s; host is %s'  %  (physhost,host)
+		import rocks.commands.list.host.vm
+		a = rocks.commands.list.host.vm.Command(None)
+		state = a.getStatus( physhost, host)
+		
+		if state != 'nostate':
+			rocks.commands.Abort("The vm " + host + " is still running (" + state + 
+		                "). Please shut it down before running this command.")
+		
+		#which outputpath should we use...???
+		if not outputpath:
+			# find the largest partition on the remote node
+			# and use it as the directory prefix
+			import rocks.vm
+			vm = rocks.vm.VM(self.db)
+			
+			vbd_type = 'file'
+			prefix = vm.getLargestPartition(physhost)
+			
+			if not prefix:
+				self.abort('could not find a partition on '
+					+ 'host (%s) to hold the ' % host
+					+ 'VM\'s bundle')
+			
+			outputpath = prefix
+			outputpath = outputpath + "/ec2/bundles/" + host
+		
+		# -------------------      clear the outputpath and mkdir if it doesn't exist
+		print "Creating output directories"
+		output = self.command('run.host', [physhost,
+		                    'rm -rf %s' % outputpath, 'collate=true' ] )
+		output = self.command('run.host', [physhost,
+		                    'mkdir -p %s' % outputpath, 'collate=true' ] )
+		if len(output) > 1:
+			self.abort('We can not create the directory ' + outputpath 
+				+ ' please check that is not mounted or used')
+		
+		# --------------------     mount the file systems of the vm
+		#TODO check is this the right way to figure out the disk image??
+		print "Mounting file systems"
+		rows = self.db.execute("""select vmd.prefix, vmd.name 
+		        from nodes n, vm_disks vmd, vm_nodes vm 
+		        where vmd.Vm_Node = vm.id and vm.node = n.id 
+		        and n.name = '%s';""" % host)
+		if rows != 1:
+			self.abort('We can\'t figure out the disk of the virtual' +
+				' machine %s' % host)
+		(prefix, name) = self.db.fetchall()[0]
+		diskVM = os.path.join(prefix, name)
+		
+		
+		output = self.command('run.host', [physhost,
+		        "mkdir -p /mnt/rocksimage", 'collate=true'])
+		if len(output) > 1:
+			self.abort('Problem with making the directory /mnt/rocksimage ' +
+				'on host ' + physhost + '. Error: ' + output)
+		
+		#creating the /dev to be mounted
+		output = self.command('run.host', [physhost,
+			"kpartx -a -v %s | head -n 1|awk '{print $3}'" % diskVM, 'collate=true'])
+		devPath = '/dev/mapper/' + output.strip()
+		output = self.command('run.host', [physhost, "ls " + devPath])
+		if len(output) > 1:
+			self.abort('Problem mounting ' + diskVM + ' on host ' + 
+				physhost + '. Error: ' + output)
+		
+		#ok the device is ready we can mount
+		output = self.command('run.host', [physhost, 
+			"mount " + devPath + " /mnt/rocksimage"])
+		print "exec: mount " + devPath + " /mnt/rocksimage"
+		if len(output) > 1:
+			self.abort('Problem mounting the image: ' + output)
+		
+		output = self.command('run.host', [physhost,
+			"mkdir -p /mnt/rocksimage/mnt/ec2image", 'collate=true'])
+		if len(output) > 1:
+			#trying to unmount
+			self.terminate(physhost, diskVM)
+			self.abort('Problem with making the directory /mnt/rocksimage/mnt/ec2image ' +
+				'on host ' + physhost + '. Error: ' + output)
+		
+		output = self.command('run.host', [physhost,
+			"mount --bind %s /mnt/rocksimage/mnt/ec2image" % outputpath])
+		print "exec: mount --bind %s /mnt/rocksimage/mnt/ec2image" % outputpath
+		if len(output) > 1:
+			#trying to unmount
+			self.terminate(physhost, diskVM)
+			self.abort('Problem mounting /mnt/rocksimage on host ' +
+				physhost + '. Error: ' + output)
+		
+		# 2. --------------------     copy the credential over...
+		print "Copying credential directory"
+		retval = os.system('scp -qr %s %s:%s/.ec2 ' % (credentialDir, physhost, outputpath))
+		if retval != 0:
+			self.terminate(physhost, diskVM)
+			self.abort('Could not copy the credential directory: ' + credentialDir + 
+				' to the output path: ' + outputpath)
+		
+		# ------------------------   removing root password
+		print "Removing root password"
+		#toremove the password
+		#"sed -i -e 's/root:[^:]\{1,\}:/root:!:/' /etc/shadow"
+		output = self.command('run.host', [physhost, 
+			"command=\"sed -i --expression='s/root:[^:]\{1,\}:/root:\!:/' /mnt/rocksimage/etc/shadow\"",'collate=true'])
+		if len(output) > 1:
+			#aborting
+			print "Error output on removing password '%s'" % output
+			self.terminate(physhost, diskVM)
+			self.abort('Problem removing root password. Error: ' + output)
+		
+		# ------------------------   create the script
+		print "Creating the script"
+		arch=self.command('report.host.attr', [ host, "attr=arch" ] ).strip()
+		aki=self.command('report.host.attr', [ host, "attr=ec2_aki_%s" % arch ] ).strip()
+		print "VM is of arch %s and uses default EC2 kernel ID of %s" % (arch,aki)
+		scriptTemp = self.createScript(arch, aki)
+		retval = os.system('scp -qr %s %s:/mnt/rocksimage/mnt/ec2image/script.sh ' % (scriptTemp, physhost))
+		if retval != 0:
+			self.terminate(physhost, diskVM)
+			self.abort('Could not copy the script to the host: ' + physhost )
+		
+		# -----------------------     run the script
+		#execute it with 'chroot /mnt/rocksimage/ /mnt/ec2image/script.sh rocksdevel'
+		print "Running the bundle script this step might take around 10-20 minutes"
+		output = os.system( 'ssh %s "chroot /mnt/rocksimage /mnt/ec2image/script.sh %s"' % (physhost, imagename))
+		#I don't know how to detect if the bundle script went well or not...
+		#print "Bundle created sucessfully in: " + outputpath
+		self.terminate(physhost, diskVM)
 
-        #ok we have to bunble the vm host runnning on physhost
-        #
-        #let's check that the machine is not running
-	print 'physhost is %s; host is %s'  %  (physhost,host)
-	import rocks.commands.list.host.vm
-	a = rocks.commands.list.host.vm.Command(None)
-	state = a.getStatus( physhost, host)
 
-        if state != 'nostate':
-            rocks.commands.Abort("The vm " + host + " is still running (" + state + 
-                        "). Please shut it down before running this command.")
-
-        #which outputpath should we use...???
-        if not outputpath:
-            # find the largest partition on the remote node
-            # and use it as the directory prefix
-            import rocks.vm
-            vm = rocks.vm.VM(self.db)
-
-            vbd_type = 'file'
-            prefix = vm.getLargestPartition(physhost)
-
-            if not prefix:
-                self.abort('could not find a partition on '
-                    + 'host (%s) to hold the ' % host
-                    + 'VM\'s bundle')
-
-            outputpath = prefix
-            outputpath = outputpath + "/ec2/bundles/" + host
-
-        # -------------------      clear the outputpath and mkdir if it doesn't exist
-        print "Creating output directories"
-        output = self.command('run.host', [physhost,
-                            'rm -rf %s' % outputpath, 'collate=true' ] )
-        output = self.command('run.host', [physhost,
-                            'mkdir -p %s' % outputpath, 'collate=true' ] )
-        if len(output) > 1:
-            self.abort('We can not create the directory ' + outputpath 
-                + 'please check that is not mounted or used')
-        
-        # --------------------     mount the file systems of the vm
-        #TODO check is this the right way to figure out the disk image??
-        print "Mounting file systems"
-        rows = self.db.execute("""select vmd.prefix, vmd.name 
-                from nodes n, vm_disks vmd, vm_nodes vm 
-                where vmd.Vm_Node = vm.id and vm.node = n.id 
-                and n.name = '%s';""" % host)
-        if rows != 1:
-            self.abort('We can\'t figure out the disk of the virtual' +
-                    ' machine %s' % host)
-        (prefix, name) = self.db.fetchall()[0]
-        diskVM = os.path.join(prefix, name)
-        
-        
-        output = self.command('run.host', [physhost,
-                "mkdir -p /mnt/rocksimage", 'collate=true'])
-        if len(output) > 1:
-            self.abort('Problem with making the directory /mnt/rocksimage ' +
-                'on host ' + physhost + '. Error: ' + output)
-
-        output = self.command('run.host', [physhost,
-                "lomount -diskimage %s -partition 1 /mnt/rocksimage" % diskVM, 'collate=true'])
-        if len(output) > 1:
-            self.abort('Problem mounting ' + diskVM + ' on host ' + 
-                physhost + '. Error: ' + output)
-
-        output = self.command('run.host', [physhost,
-                "mkdir -p /mnt/rocksimage/mnt/ec2image", 'collate=true'])
-        if len(output) > 1:
-            #trying to unmount
-            self.command('run.host', [physhost, "umount /mnt/rocksimage"])
-            self.abort('Problem with making the directory /mnt/rocksimage/mnt/ec2image ' +
-                'on host ' + physhost + '. Error: ' + output)
-
-        output = self.command('run.host', [physhost,
-                "mount --bind %s /mnt/rocksimage/mnt/ec2image" % outputpath])
-        if len(output) > 1:
-            #trying to unmount
-            self.command('run.host', [physhost, "umount /mnt/rocksimage",'collate=true'])
-            self.abort('Problem mounting /mnt/rocksimage on host ' +
-                physhost + '. Error: ' + output)
-
-        # 2. --------------------     copy the credential over...
-        print "Copying credential directory"
-        retval = os.system('scp -qr %s %s:%s/.ec2 ' % (credentialDir, physhost, outputpath))
-        if retval != 0:
-            self.terminate(physhost)
-            self.abort('Could not copy the credential directory: ' + credentialDir + 
-                ' to the output path: ' + outputpath)
-
-        # ------------------------   removing root password
-        print "Removing root password"
-        #toremove the password
-        #"sed -i -e 's/root:[^:]\{1,\}:/root:!:/' /etc/shadow"
-        output = self.command('run.host', [physhost, 
-            "command=\"sed -i --expression='s/root:[^:]\{1,\}:/root:\!:/' /mnt/rocksimage/etc/shadow\"",'collate=true'])
-        if len(output) > 1:
-            #aborting
-	    print "Error output on removing password '%s'" % output
-            self.terminate(physhost)
-            self.abort('Problem removing root password. Error: ' + output)
-
-        # ------------------------   create the script
-        print "Creating the script"
-        arch=self.command('report.host.attr', [ host, "attr=arch" ] ).strip()
-        aki=self.command('report.host.attr', [ host, "attr=ec2_aki_%s" % arch ] ).strip()
-	print "VM is of arch %s and uses default EC2 kernel ID of %s" % (arch,aki)
-        scriptTemp = self.createScript(arch, aki)
-        retval = os.system('scp -qr %s %s:/mnt/rocksimage/mnt/ec2image/script.sh ' % (scriptTemp, physhost))
-        if retval != 0:
-            self.terminate(physhost)
-            self.abort('Could not copy the script to the host: ' + physhost )
-
-        # -----------------------     run the script
-        #execute it with 'chroot /mnt/rocksimage/ /mnt/ec2image/script.sh rocksdevel'
-        print "Running the bundle script this step might take around 10-20 minutes"
-        output = os.system( 'ssh %s "chroot /mnt/rocksimage /mnt/ec2image/script.sh %s"' % (physhost, imagename))
-        #I don't know how to detect if the bundle script went well or not...
-        #print "Bundle created sucessfully in: " + outputpath
-        self.terminate(physhost)
-
-
-    def createScript(self,arch,aki):
-        """this function create the script to bundle the VM"""
-        outputFile = ""
-        script = """#!/bin/bash
+	def createScript(self,arch,aki):
+		"""this function create the script to bundle the VM"""
+		outputFile = ""
+		script = """#!/bin/bash
 
 if [ -n "$1" ] ;
 then 
@@ -267,25 +282,23 @@ export EC2_HOME=/opt/ec2
 echo bundling...
 /opt/ec2/bin/ec2-bundle-vol -d /mnt/ec2image/ -e /mnt/ec2image -c /mnt/ec2image/.ec2/cert.pem -k /mnt/ec2image/.ec2/pk.pem -u `cat /mnt/ec2image/.ec2/user` $IMAGENAME --arch %s --no-inherit --generate-fstab --kernel %s 
 
-        """ % (arch,aki)
+""" % (arch,aki)
+	
+		import tempfile
+		temp = tempfile.mktemp()
+		file = open(temp, 'w')
+		file.write(script)
+		file.close()
+		os.chmod(temp, stat.S_IRWXU)
+		return temp
 
-        import tempfile
-        temp = tempfile.mktemp()
-        file = open(temp, 'w')
-        file.write(script)
-        file.close()
-        os.chmod(temp, stat.S_IRWXU)
-        return temp
-
-
-    def terminate(self, physhost):
-        #unmounting the file systems
-        output = self.command('run.host', [physhost, "umount /mnt/rocksimage/mnt/ec2image", 'collate=true'])
-        if len(output) > 1:
-            self.abort('Problem mounting /mnt/rocksimage/mnt/ec2image on host ' +
-                physhost + '. Error: ' + output)
-        output = self.command('run.host', [physhost, "umount /mnt/rocksimage",'collate=true'])
-        if len(output) > 1:
-            self.abort('Problem mounting /mnt/rocksimage on host ' +
-                physhost + '. Error: ' + output)
+	def terminate(self, physhost, diskVM):
+		#unmounting the file systems
+		output = self.command('run.host', [physhost, 
+			"umount /mnt/rocksimage/mnt/ec2image", 'collate=true'])
+		output = self.command('run.host', [physhost, 
+			"umount /mnt/rocksimage",'collate=true'])
+		output = self.command('run.host', [physhost, 
+			"kpartx -d -v %s " % diskVM])
+	
 
