@@ -22,7 +22,7 @@ has been properly populated with keys and certificates.
 
 <listitem>
 <para>
-Build a local development appliance.
+Build a local development appliance (the host must have associated an attribute ec2_enable set to true)
 </para>
 
 </listitem>
@@ -36,7 +36,7 @@ Bundle the appliance using the command <computeroutput>rocks create ec2 bundle &
 
 <listitem>
 <para>
-Upload the Bundled appliance using the command <computeroutput>rocks upload ec2 bundle &lt;hostname&gt;</computeroutput>
+Upload the Bundled appliance using the command <computeroutput>rocks upload ec2 bundle &lt;hostname&gt; &lt;bucketname&gt;</computeroutput>
 </para>
 </listitem>
 

@@ -1,8 +1,11 @@
-# $Id: __init__.py,v 1.7 2012/06/15 01:50:54 clem Exp $
+# $Id: __init__.py,v 1.8 2012/06/16 02:06:27 clem Exp $
 #
 # Luca Clementi clem@sdsc.edu
 #
 # $Log: __init__.py,v $
+# Revision 1.8  2012/06/16 02:06:27  clem
+# /dev/vda hda sda ...... drives clem cazy!!
+#
 # Revision 1.7  2012/06/15 01:50:54  clem
 # ported most of the create bundle command to rocks 6/5
 # minor fix to the graph
@@ -194,7 +197,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.create.comman
 		#ok the device is ready we can mount
 		output = self.command('run.host', [physhost, 
 			"mount " + devPath + " /mnt/rocksimage"])
-		print "exec: mount " + devPath + " /mnt/rocksimage"
+		#print "exec: mount " + devPath + " /mnt/rocksimage"
 		if len(output) > 1:
 			self.abort('Problem mounting the image: ' + output)
 		
@@ -208,7 +211,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.create.comman
 		
 		output = self.command('run.host', [physhost,
 			"mount --bind %s /mnt/rocksimage/mnt/ec2image" % outputpath])
-		print "exec: mount --bind %s /mnt/rocksimage/mnt/ec2image" % outputpath
+		#print "exec: mount --bind %s /mnt/rocksimage/mnt/ec2image" % outputpath
 		if len(output) > 1:
 			#trying to unmount
 			self.terminate(physhost, diskVM)

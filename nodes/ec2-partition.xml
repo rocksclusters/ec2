@@ -5,7 +5,7 @@
 Partitioning required to run in ec2
 </description>
 <pre>
-echo "clearpart --all --initlabel --drives=hda
-part / --size 9500 --ondisk hda " > /tmp/user_partition_info
+echo "clearpart --all --initlabel --drives=vda
+part / --size 9500 --ondisk vda " > /tmp/user_partition_info
 </pre>
 </kickstart> 
