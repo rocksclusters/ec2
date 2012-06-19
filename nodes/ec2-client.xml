@@ -33,7 +33,7 @@ title Rocks-EC2 (&ec2_kernel;)
 	initrd /boot/initrd-&ec2_kernelVersion;
 </file>
 
-/bin/sed -i /boot/grub/grub-orig.conf -e "s/^default=0/default=1/"
+#/bin/sed -i /boot/grub/grub-orig.conf -e "s/^default=0/default=1/"
 
 <!-- remove /install if it exists it is in the wrong place -->
 if [ -d /install ]; then
@@ -47,7 +47,7 @@ EC2-enabled Client
 <!-- Get the user's authorized key as root's key using Amazon published method-->
 <file name="/etc/rc.d/init.d/ec2-root-ssh" perms="755">
 <![CDATA[#!/bin/sh
-# $Id: ec2-client.xml,v 1.11 2010/01/15 04:17:46 phil Exp $
+# $Id: ec2-client.xml,v 1.12 2012/06/19 06:34:39 clem Exp $
 #
 # chkconfig: 2345 99 40
 # description: ec2 ssh key access
