@@ -4,17 +4,26 @@
 <description> Put support files on a Rocks frontend that enables building
 EC2-compatible VMs
 </description>
-<package>ec2-kernel-www</package>
+
+<!-- <package>ec2-kernel-www</package> 
+     not used anymore, new we use kernel deployed on
+     the image
+     -->
 <package>rocks-ec2-commands</package>
 <package>roll-ec2-usersguide</package>
 <package>flex</package>
 <post>
-/opt/rocks/bin/rocks add attr ec2_kernel value=None
-/opt/rocks/bin/rocks add attr ec2_kernelTar value=None
-/opt/rocks/bin/rocks add attr ec2_kernelVersion value=None
-/opt/rocks/bin/rocks add attr ec2_initrd value=None
-/opt/rocks/bin/rocks add attr ec2_aki_i386 value=None
-/opt/rocks/bin/rocks add attr ec2_aki_x86_64 value=None
+#
+# now ec2 roll uses local image kernel with PV_grub
+# http://docs.amazonwebservices.com/AWSEC2/latest/UserGuide/UserProvidedkernels.html
+#
+#/opt/rocks/bin/rocks add attr ec2_kernel value=None
+#/opt/rocks/bin/rocks add attr ec2_kernelTar value=None
+#/opt/rocks/bin/rocks add attr ec2_kernelVersion value=None
+#/opt/rocks/bin/rocks add attr ec2_initrd value=None
+#this is PV-GRUB for US-East-1
+/opt/rocks/bin/rocks add attr ec2_aki_i386 value=aki-b6aa75df
+/opt/rocks/bin/rocks add attr ec2_aki_x86_64 value=aki-88aa75e1
 
 # Add the ec2-dynamic appliance type. This is a convenient moniker to
 # do special things to appliances running in ec2
@@ -46,10 +55,6 @@ EC2-compatible VMs
 /opt/rocks/bin/rocks add network ec2public 0.0.0.0 netmask=255.255.255.255 mtu=1500 dnszone=compute-1.amazonaws.com servedns=false
 /opt/rocks/bin/rocks add network ec2private 0.0.0.0 netmask=255.255.254.0 mtu=1500 servedns=false
 /opt/rocks/bin/rocks add network ec2tunnel 0.0.0.0 netmask=255.255.255.252 mtu=1500
-
-# Now populate the ec2 attrs based on the kernel in ec2-kernel-www package.  
-# the following scripts is built by th ec2-kernel-www package
-/opt/ec2/bin/rocks-set-ec2-attrs
 
 </post>
 </kickstart> 
