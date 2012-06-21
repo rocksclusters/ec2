@@ -1,8 +1,11 @@
-# $Id: __init__.py,v 1.8 2012/06/16 02:06:27 clem Exp $
+# $Id: __init__.py,v 1.9 2012/06/21 02:03:04 clem Exp $
 #
 # Luca Clementi clem@sdsc.edu
 #
 # $Log: __init__.py,v $
+# Revision 1.9  2012/06/21 02:03:04  clem
+# more fixes to support new kernel from local image
+#
 # Revision 1.8  2012/06/16 02:06:27  clem
 # /dev/vda hda sda ...... drives clem cazy!!
 #
@@ -40,7 +43,7 @@ import time
 import sys
 import string
 import rocks.commands
-
+import tempfile
 
 class Command(rocks.commands.HostArgumentProcessor, rocks.commands.create.command):
 	"""
@@ -237,7 +240,27 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.create.comman
 			print "Error output on removing password '%s'" % output
 			self.terminate(physhost, diskVM)
 			self.abort('Problem removing root password. Error: ' + output)
-		
+
+		# ------------------------   create fstab
+		print "Fixing fstab"
+		fstab="""# Default /etc/fstab
+/dev/xvde1  /     ext3    defaults 1 1
+/dev/xvde2  /mnt  ext3    defaults 0 0
+tmpfs       /dev/shm  tmpfs   defaults 0 0
+none        /dev/pts devpts  gid=5,mode=620 0 0
+none        /proc proc    defaults 0 0
+none        /sys  sysfs   defaults 0 0
+"""
+		temp = tempfile.mktemp()
+		file = open(temp, 'w')
+		file.write(fstab)
+		file.close()
+		retval = os.system('scp -qr %s %s:/mnt/rocksimage/mnt/ec2image/fstab' % (temp, physhost ))
+		if retval != 0:
+			self.terminate(physhost, diskVM)
+			self.abort('Could not copy the fstab to the host: ' + physhost )
+
+				
 		# ------------------------   create the script
 		print "Creating the script"
 		arch=self.command('report.host.attr', [ host, "attr=arch" ] ).strip()
@@ -283,11 +306,10 @@ MAKEDEV urandom
 export EC2_HOME=/opt/ec2
 
 echo bundling...
-/opt/ec2/bin/ec2-bundle-vol -d /mnt/ec2image/ -e /mnt/ec2image -c /mnt/ec2image/.ec2/cert.pem -k /mnt/ec2image/.ec2/pk.pem -u `cat /mnt/ec2image/.ec2/user` $IMAGENAME --arch %s --no-inherit --generate-fstab --kernel %s 
+/opt/ec2/bin/ec2-bundle-vol -d /mnt/ec2image/ -e /mnt/ec2image -c /mnt/ec2image/.ec2/cert.pem -k /mnt/ec2image/.ec2/pk.pem -u `cat /mnt/ec2image/.ec2/user` $IMAGENAME --arch %s --no-inherit --fstab /mnt/ec2image/fstab --kernel %s 
 
 """ % (arch,aki)
 	
-		import tempfile
 		temp = tempfile.mktemp()
 		file = open(temp, 'w')
 		file.write(script)
