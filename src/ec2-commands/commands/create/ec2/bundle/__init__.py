@@ -1,8 +1,11 @@
-# $Id: __init__.py,v 1.9 2012/06/21 02:03:04 clem Exp $
+# $Id: __init__.py,v 1.10 2012/06/21 18:22:09 clem Exp $
 #
 # Luca Clementi clem@sdsc.edu
 #
 # $Log: __init__.py,v $
+# Revision 1.10  2012/06/21 18:22:09  clem
+# fixed the grub configuration to work with the local kernel in ec2 (some code refactoring)
+#
 # Revision 1.9  2012/06/21 02:03:04  clem
 # more fixes to support new kernel from local image
 #
@@ -234,10 +237,10 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.create.comman
 		#toremove the password
 		#"sed -i -e 's/root:[^:]\{1,\}:/root:!:/' /etc/shadow"
 		output = self.command('run.host', [physhost, 
-			"command=\"sed -i --expression='s/root:[^:]\{1,\}:/root:\!:/' /mnt/rocksimage/etc/shadow\"",'collate=true'])
+			"command=\"sed -i --expression='s/root:[^:]\{1,\}:/root:\!:/' /mnt/rocksimage/etc/shadow\"",
+			'collate=true'])
 		if len(output) > 1:
 			#aborting
-			print "Error output on removing password '%s'" % output
 			self.terminate(physhost, diskVM)
 			self.abort('Problem removing root password. Error: ' + output)
 
@@ -251,40 +254,43 @@ none        /dev/pts devpts  gid=5,mode=620 0 0
 none        /proc proc    defaults 0 0
 none        /sys  sysfs   defaults 0 0
 """
-		temp = tempfile.mktemp()
-		file = open(temp, 'w')
-		file.write(fstab)
-		file.close()
-		retval = os.system('scp -qr %s %s:/mnt/rocksimage/mnt/ec2image/fstab' % (temp, physhost ))
-		if retval != 0:
+		if not createScript(fstab, '/mnt/rocksimage/mnt/ec2image/fstab', physhost):
 			self.terminate(physhost, diskVM)
 			self.abort('Could not copy the fstab to the host: ' + physhost )
 
-				
+
+		# ------------------------   fix the grub.conf for ec2
+		# we need to take the options out of the kernel grub invocation
+		# fix the partions address (hd0,0 must be hd0)
+		print "Fixing grub"
+		sedGrub = """#!/bin/bash
+BASEROOT=/mnt/rocksimage
+GRUBDIR=$BASEROOT/boot/grub
+
+cp $GRUBDIR/grub.conf $GRUBDIR/grub-orig.conf
+sed -i 's/hd0,0/hd0/g' $GRUBDIR/grub.conf
+sed -i 's/kernel \([^ ]*\) .*/kernel \\1 root=\/dev\/xvde1/g' $GRUBDIR/grub.conf
+"""
+		scriptName = '/tmp/fixgrub.sh'
+
+		if not createScript(sedGrub, scriptName, physhost):
+			self.terminate(physhost, diskVM)
+			self.abort('Could not copy the fstab to the host: ' + physhost )
+
+		self.command('run.host', [ physhost, 'bash ' + scriptName ] )
+                if retval != 0:
+			#restore original grub
+			self.command('run.host', [ physhost, 
+				'cp /mnt/rocksimage/boot/grub/grub-orig.conf /mnt/rocksimage/boot/grub/grub.conf'])
+                        self.terminate(physhost, diskVM)
+                        self.abort('Could fix grub configuration for EC2 ' )
+
 		# ------------------------   create the script
-		print "Creating the script"
+		print "Creating the bundle script"
 		arch=self.command('report.host.attr', [ host, "attr=arch" ] ).strip()
 		aki=self.command('report.host.attr', [ host, "attr=ec2_aki_%s" % arch ] ).strip()
-		print "VM is of arch %s and uses default EC2 kernel ID of %s" % (arch,aki)
-		scriptTemp = self.createScript(arch, aki)
-		retval = os.system('scp -qr %s %s:/mnt/rocksimage/mnt/ec2image/script.sh ' % (scriptTemp, physhost))
-		if retval != 0:
-			self.terminate(physhost, diskVM)
-			self.abort('Could not copy the script to the host: ' + physhost )
-		
-		# -----------------------     run the script
-		#execute it with 'chroot /mnt/rocksimage/ /mnt/ec2image/script.sh rocksdevel'
-		print "Running the bundle script this step might take around 10-20 minutes"
-		output = os.system( 'ssh %s "chroot /mnt/rocksimage /mnt/ec2image/script.sh %s"' % (physhost, imagename))
-		#I don't know how to detect if the bundle script went well or not...
-		#print "Bundle created sucessfully in: " + outputpath
-		self.terminate(physhost, diskVM)
-
-
-	def createScript(self,arch,aki):
-		"""this function create the script to bundle the VM"""
-		outputFile = ""
-		script = """#!/bin/bash
+		print "VM is of arch %s and uses default EC2 kernel ID %s" % (arch,aki)
+		bundleScript = """#!/bin/bash
 
 if [ -n "$1" ] ;
 then 
@@ -309,13 +315,23 @@ echo bundling...
 /opt/ec2/bin/ec2-bundle-vol -d /mnt/ec2image/ -e /mnt/ec2image -c /mnt/ec2image/.ec2/cert.pem -k /mnt/ec2image/.ec2/pk.pem -u `cat /mnt/ec2image/.ec2/user` $IMAGENAME --arch %s --no-inherit --fstab /mnt/ec2image/fstab --kernel %s 
 
 """ % (arch,aki)
-	
-		temp = tempfile.mktemp()
-		file = open(temp, 'w')
-		file.write(script)
-		file.close()
-		os.chmod(temp, stat.S_IRWXU)
-		return temp
+		if not createScript(bundleScript, '/mnt/rocksimage/mnt/ec2image/script.sh', physhost):
+			self.command('run.host', [ physhost, 
+				'cp /mnt/rocksimage/boot/grub/grub-orig.conf /mnt/rocksimage/boot/grub/grub.conf'])
+			self.terminate(physhost, diskVM)
+			self.abort('Could not copy the script to the host: ' + physhost )
+		
+		# -----------------------     run the script
+		#execute it with 'chroot /mnt/rocksimage/ /mnt/ec2image/script.sh rocksdevel'
+		print "Running the bundle script this step might take around 10-20 minutes"
+		retval = os.system( 'ssh %s "chroot /mnt/rocksimage /mnt/ec2image/script.sh %s"' % 
+							(physhost, imagename))
+		#I don't know how to detect if the bundle script went well or not...
+		#print "Bundle created sucessfully in: " + outputpath
+		self.command('run.host', [ physhost, 
+			'cp /mnt/rocksimage/boot/grub/grub-orig.conf /mnt/rocksimage/boot/grub/grub.conf'])
+		self.terminate(physhost, diskVM)
+
 
 	def terminate(self, physhost, diskVM):
 		#unmounting the file systems
@@ -325,5 +341,20 @@ echo bundling...
 			"umount /mnt/rocksimage",'collate=true'])
 		output = self.command('run.host', [physhost, 
 			"kpartx -d -v %s " % diskVM])
+
+
+def createScript(script, outputFilename, hostname):
+	"""this function create a file with script content 
+	to the hostname machine with outputfileName"""
+	temp = tempfile.mktemp()
+	file = open(temp, 'w')
+	file.write(script)
+	file.close()
+	os.chmod(temp, stat.S_IRWXU)
+	retval = os.system('scp -qr %s %s:%s' % (temp, hostname, outputFilename ))
+	if retval != 0:
+		return False
+	return True
+
 	
 
