@@ -12,8 +12,7 @@ part / --size 9500 --fstype=ext3 --ondisk vda " > /tmp/user_partition_info
 <post>
 #fixing ec2 partitioning
 mkdir -p /share
-mkdir -p /state/partition1
-ln -s /state/partition1 /export
+ln -s /export /state/partition1
 </post>
 
 </kickstart> 
