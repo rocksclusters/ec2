@@ -1,8 +1,12 @@
-# $Id: __init__.py,v 1.11 2012/06/29 16:00:36 clem Exp $
+# $Id: __init__.py,v 1.12 2012/07/03 01:15:55 clem Exp $
 #
 # Luca Clementi clem@sdsc.edu
 #
 # $Log: __init__.py,v $
+# Revision 1.12  2012/07/03 01:15:55  clem
+# Fix to properly mount ephmeral0 storage also on large and extra large instance
+# (before it wasn't mounted)
+#
 # Revision 1.11  2012/06/29 16:00:36  clem
 # Fix to the fstab so that it mount the proper ephemeral storage
 #
@@ -251,7 +255,6 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.create.comman
 		print "Fixing fstab"
 		fstab="""# Default /etc/fstab
 /dev/xvde1  /     ext3    defaults 1 1
-/dev/xvdf   /mnt  ext3    defaults 0 0
 tmpfs       /dev/shm  tmpfs   defaults 0 0
 none        /dev/pts devpts  gid=5,mode=620 0 0
 none        /proc proc    defaults 0 0

@@ -29,7 +29,7 @@ EC2-enabled Client
 <!-- Get the user's authorized key as root's key using Amazon published method-->
 <file name="/etc/rc.d/init.d/ec2-root-ssh" perms="755">
 <![CDATA[#!/bin/sh
-# $Id: ec2-client.xml,v 1.13 2012/06/20 23:43:23 clem Exp $
+# $Id: ec2-client.xml,v 1.14 2012/07/03 01:15:55 clem Exp $
 #
 # chkconfig: 2345 99 40
 # description: ec2 ssh key access
@@ -55,10 +55,53 @@ else
 fi
 }
 
+function shiftChar(){
+    #
+    # this function shift the input character $1 of 4
+    # position (redhat device naming madness)
+    # https://bugzilla.redhat.com/show_bug.cgi?id=729586
+    # sda become xvd(a + 4)
+    #
+    intCharInitial=`printf "%d" \'$1`
+    #from int to char
+    intCharFinal=`expr $intCharInitial + 4`
+    charFinal=`printf "\x$(printf %x $intCharFinal)"`
+    echo -n $charFinal
+}
+
+function setMount(){
+    #
+    # update the fstab with ephemeral0 storage 
+    # which change device based on instance type
+    # http://docs.amazonwebservices.com/AWSEC2/latest/UserGuide/InstanceStorage.html#InstanceStoreDeviceNames
+    #
+    OrginalDevice=`curl http://169.254.169.254/2009-04-04/meta-data/block-device-mapping/ephemeral0`
+    NewDevName=xvd`shiftChar ${OrginalDevice:2:1}`
+    if [ ${#OrginalDevice} == 4 ]; then
+        #we need the partition number
+	NewDevName=$NewDevName${OrginalDevice:3:1}
+    fi
+    echo New device name is $NewDevName
+    if ! grep $NewDevName /etc/fstab ; then
+        cp /etc/fstab /etc/fstab.orig
+        echo "/dev/$NewDevName  /mnt	auto	defaults,comment=rocksconfig	0	2" >> /etc/fstab
+
+        if [ -b /dev/xvde3 ]; then 
+		echo "/dev/xvde3	none	swap	sw,comment=rocksconfig	0	0" >> /etc/fstab
+		swapon -a
+	fi
+	mount -a
+    fi
+
+}
+
+
+
 case "$1" in
    start)
 	echo -n "Adding User-Supplied EC2 Root SSH Key"
 	copykeys 
+	setMount 
 	RETVAL=$?
 	echo
 	[ $RETVAL -eq 0 ] 
