@@ -51,3 +51,4 @@ ec2-register -K phil-aws-priv.pem -C phil-aws-pub.pem ${S3BUCKET}/${IMAGENAME}.m
 
 
 4. EC2 Updates.
+5. Need to look private network capability in EC2
