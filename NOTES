@@ -48,3 +48,6 @@ ec2-register -K phil-aws-priv.pem -C phil-aws-pub.pem ${S3BUCKET}/${IMAGENAME}.m
    ec2-run-instances -K phil-aws-priv.pem -C phil-aws-pub.pem -t m1.large ami-931cfafa  -k phil-aws
    # see if it is running.
    ec2-describe-instances -K phil-aws-priv.pem -C phil-aws-pub.pem
+
+
+4. EC2 Updates.
