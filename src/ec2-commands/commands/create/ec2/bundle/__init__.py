@@ -1,8 +1,11 @@
-# $Id: __init__.py,v 1.12 2012/07/03 01:15:55 clem Exp $
+# $Id: __init__.py,v 1.13 2012/07/31 00:08:39 clem Exp $
 #
 # Luca Clementi clem@sdsc.edu
 #
 # $Log: __init__.py,v $
+# Revision 1.13  2012/07/31 00:08:39  clem
+# Fixed useless command=bla syntax with ec2
+#
 # Revision 1.12  2012/07/03 01:15:55  clem
 # Fix to properly mount ephmeral0 storage also on large and extra large instance
 # (before it wasn't mounted)
@@ -243,8 +246,8 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.create.comman
 		print "Removing root password"
 		#toremove the password
 		#"sed -i -e 's/root:[^:]\{1,\}:/root:!:/' /etc/shadow"
-		output = self.command('run.host', [physhost, 
-			"command=\"sed -i --expression='s/root:[^:]\{1,\}:/root:\!:/' /mnt/rocksimage/etc/shadow\"",
+		output = self.command('run.host', [physhost,
+			"sed -i --expression='s/root:[^:]\{1,\}:/root:\!:/' /mnt/rocksimage/etc/shadow",
 			'collate=true'])
 		if len(output) > 1:
 			#aborting
