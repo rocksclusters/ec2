@@ -29,9 +29,9 @@ EC2-enabled Client
 <!-- Get the user's authorized key as root's key using Amazon published method-->
 <file name="/etc/rc.d/init.d/ec2-root-ssh" perms="755">
 <![CDATA[#!/bin/sh
-# $Id: ec2-client.xml,v 1.15 2012/07/03 19:41:30 clem Exp $
+# $Id: ec2-client.xml,v 1.16 2012/08/31 00:36:10 clem Exp $
 #
-# chkconfig: 2345 29 40
+# chkconfig: 2345 60 40
 # description: ec2 ssh key access
 #
 . /etc/rc.d/init.d/functions
@@ -51,7 +51,7 @@ if [ $? -eq 0 ] ; then
 	rm /tmp/my-key
    	return 0
 else
-	return -1
+	return 1
 fi
 }
 
