@@ -19,6 +19,9 @@
 
   <changelog>
   $Log: lite-base.xml,v $
+  Revision 1.2  2012/09/18 02:34:29  clem
+  We need rocks command on the light appliance to translate kickstart file
+
   Revision 1.1  2011/01/13 22:37:18  phil
   Checkpoint. New version of ami/api tools, condor plugin. lightweight appliance
 
@@ -58,6 +61,9 @@
   <package>rocks-pylib</package>
   <package>foundation-python-extras</package>
   <package>foundation-python-xml</package>
+
+  <!-- rocks-command to run convert xml kickstart into real kickstart -->
+  <package>rocks-command</package>
 
 <pre>
 
