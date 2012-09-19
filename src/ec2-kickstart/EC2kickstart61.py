@@ -1,6 +1,6 @@
 #! /opt/rocks/bin/python
 #
-# $Id: EC2kickstart61.py,v 1.1 2012/09/19 18:44:56 clem Exp $
+# $Id: EC2kickstart61.py,v 1.2 2012/09/19 18:53:49 clem Exp $
 #
 # @Copyright@
 # 
@@ -89,13 +89,13 @@ class AppEC2(kickstart.App):
 
 
 if __name__ == "__main__":
-    #print dir(AppEC2)
-    app = AppEC2(sys.argv)
-    app.parseArgs('kcgi')
-    try:
-    	app.run()
-    except KickstartError, msg:
-    	sys.stderr.write("kcgi error - %s\n" % msg)
-    	sys.exit(-1)
+	#print dir(AppEC2)
+	app = AppEC2(sys.argv)
+	app.parseArgs('kcgi')
+	try:
+		app.run()
+	except KickstartError, msg:
+		sys.stderr.write("kcgi error - %s\n" % msg)
+		sys.exit(-1)
     
 

@@ -1,6 +1,6 @@
 #! /opt/rocks/bin/python
 #
-# $Id: EC2kickstart60.py,v 1.1 2012/09/19 18:44:56 clem Exp $
+# $Id: EC2kickstart60.py,v 1.2 2012/09/19 18:53:49 clem Exp $
 #
 # @Copyright@
 # 
@@ -652,14 +652,149 @@ class App(rocks.kickstart.Application):
 		return False
 
 
+	def run(self):
+
+		try:
+			self.checkLoad()
+		except KickstartError:
+			print "Content-type: text/html"
+			print "Status: 503 Service Busy"
+			print "Retry-After: 15"
+			print
+			print "<h1>Service is Busy</h1>"
+			sys.exit(1)
+
+		try:
+			self.connect()
+
+			# If request comes from internal network, it is
+			# internal. Otherwise, this is a WAN request.
+
+			if not self.clientList[0] or self.isInternal():
+				self.localKickstart()
+			else:
+				self.wanKickstart()
+		except:
+			pass
+			
+		#
+		# build the output string
+		#
+		self.completedLoad()
+		out = string.join(self.report, '\n')
+
+		#
+		# get the avalanche attributes
+		#
+		attrs = {}
+		attrs['trackers'] = ''
+		attrs['pkgservers'] = ''
+
+		for i in [ 'Kickstart_PrivateKickstartHost', 'trackers',
+				'pkgservers' ]:
+
+			cmd = '/opt/rocks/bin/rocks list host attr %s | ' \
+				% (self.clientList[0])
+			cmd += "grep %s | awk '{print $3}'" % i
+
+			var = ''
+			for line in os.popen(cmd).readlines():
+				var = line[:-1]
+			try:
+				attrs[i] = var.strip()
+			except:
+				pass
+
+		if not attrs['trackers']:
+			attrs['trackers'] = \
+				attrs['Kickstart_PrivateKickstartHost']
+
+		if not attrs['pkgservers']:
+			attrs['pkgservers'] = \
+				attrs['Kickstart_PrivateKickstartHost']
+
+		print 'Content-type: application/octet-stream'
+		print 'Content-length: %d' % (len(out))
+		print 'X-Avalanche-Trackers: %s' % (attrs['trackers'])
+		print 'X-Avalanche-Pkg-Servers: %s' % (attrs['pkgservers'])
+		print ''
+		print out
+
+
+	
+class NodesHandler(rocks.util.ParseXML):
+
+	def __init__(self):
+		rocks.util.ParseXML.__init__(self)
+		self.nodes		= {}
+		self.attrs		= rocks.util.Struct()
+		self.attrs.default	= rocks.util.Struct()
+
+
+	def getServer(self, client):
+		try:
+			val = self.nodes[client]
+		except KeyError:
+			val = None
+		return val
+
+
+	def addClient(self):
+		if self.attrs.spoof:
+			val = (self.attrs.server, self.attrs.spoof,
+			       self.attrs.path)
+		else:
+			val = (self.attrs.server, self.attrs.client,
+			       self.attrs.path)
+		key = self.attrs.client
+		self.nodes[key] = val
+
+
+	def endElement_proxy(self, name):
+		if not self.attrs.server:
+			self.attrs.server = self.attrs.default.server
+		if not self.attrs.client:
+			self.attrs.client = self.attrs.default.client
+		if not self.attrs.path:
+			self.attrs.path = self.attrs.default.path
+		if not self.attrs.spoof:
+			self.attrs.spoof = self.attrs.default.spoof
+
+		if self.attrs.client:
+			self.addClient()
+
+
+	def startElement_client(self, name, attrs):
+		self.text		= ''
+		self.attrs.server	= self.attrs.default.server
+		self.attrs.path		= self.attrs.default.path
+		self.attrs.spoof	= self.attrs.default.spoof
+		
+		if attrs.has_key('server'):
+			self.attrs.server = attrs['server']
+		if attrs.has_key('path'):
+			self.attrs.path = attrs['path']
+		if attrs.has_key('spoof'):
+			self.attrs.spoof = attrs['spoof']
+
+
+	def endElement_client(self, name):
+		self.attrs.client = self.text
+		self.addClient()
+		self.attrs.client = None
+
+
+
+
 
 if __name__ == "__main__":
-    app = App(sys.argv)
-    app.parseArgs('kcgi')
-    try:
-    	app.run()
-    except KickstartError, msg:
-    	sys.stderr.write("kcgi error - %s\n" % msg)
-    	sys.exit(-1)
+	app = App(sys.argv)
+	app.parseArgs('kcgi')
+	try:
+		app.run()
+	except KickstartError, msg:
+		sys.stderr.write("kcgi error - %s\n" % msg)
+		sys.exit(-1)
     
+
 
