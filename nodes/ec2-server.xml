@@ -10,6 +10,7 @@ EC2-compatible VMs
      the image
      -->
 <package>rocks-ec2-commands</package>
+<package>rocks-ec2-kickstart</package>
 <package>roll-ec2-usersguide</package>
 <package>flex</package>
 <post>
