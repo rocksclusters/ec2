@@ -29,7 +29,7 @@ EC2-enabled Client
 <!-- Get the user's authorized key as root's key using Amazon published method-->
 <file name="/etc/rc.d/init.d/ec2-root-ssh" perms="755">
 <![CDATA[#!/bin/sh
-# $Id: ec2-client.xml,v 1.16 2012/08/31 00:36:10 clem Exp $
+# $Id: ec2-client.xml,v 1.17 2012/09/24 18:47:08 clem Exp $
 #
 # chkconfig: 2345 60 40
 # description: ec2 ssh key access
@@ -45,7 +45,12 @@ if [ ! -d /root/.ssh ] ; then
 fi
 # Fetch public key using HTTP
 curl http://169.254.169.254/2009-04-04//meta-data/public-keys/0/openssh-key > /tmp/my-key  2>/dev/null
-if [ $? -eq 0 ] ; then
+while [ "$?" -ne "0" ] ; do
+	sleep 2
+	curl http://169.254.169.254/2009-04-04//meta-data/public-keys/0/openssh-key > /tmp/my-key  2>/dev/null
+done
+
+if [ -f /tmp/my-key ] ; then
 	cat /tmp/my-key >> /root/.ssh/authorized_keys
 	chmod 700 /root/.ssh/authorized_keys
 	rm /tmp/my-key
