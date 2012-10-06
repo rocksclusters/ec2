@@ -1,4 +1,4 @@
-# $Id: __init__.py,v 1.10 2012/02/21 21:35:05 clem Exp $
+# $Id: __init__.py,v 1.11 2012/10/06 00:18:42 clem Exp $
 #
 # Minh Ngoc Nhat Huynh nnhuy2@student.monash.edu
 
@@ -21,11 +21,13 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
         Upload an Amazon ec2 bundle created from rocks upload ec2 bundlefast command
 
         <arg type='string' name='host'>
-            Host name of VM that was bundled using rocks upload ec2 bundlefast
+        Host name of VM that was bundled using rocks upload ec2 bundlefast
         </arg>
         
         <arg type='string' name='keypair'>
-         Name of ec2 bucket where bundle will be uploaded
+        The name of the ssh keypair that will be used to lunch the receiver instance. 
+	The corresponding public key must be present on the frontend node under the 
+	
         </arg>
 
         <param type='string' name='credentialdir'>
@@ -40,7 +42,8 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
         
         The keypair file is needed for connecting to receiver instance
 
-        We also need the script to be copied to phyhost. The script will execute udt client and transfer data to receiver instance
+        We also need the script to be copied to phyhost. The script will execute udt 
+	client and transfer data to receiver instance
         There are 
                 appclient: c++ code
                 libudt.so: library
@@ -78,13 +81,42 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
         <param type='string' name='kernelid'>
         The kernelid to be used to boot up receiver instance
         
-        default is 'aki-e5c1218c'
+        default is 'aki-88aa75e1' which is for US-East-1 64 bit
+
+	US-East-1
+	aki-88aa75e1     64bit
+	aki-b6aa75df     32bit
+
+	US-West-1
+	aki-f77e26b2     64bit
+	aki-f57e26b0     32bit
+	
+	US-West-2
+	aki-fc37bacc     64bit
+	aki-fa37baca     32bit
+
+	EU-West-1
+	aki-71665e05     64bit
+	aki-75665e01     32bit
+	
+	AP-SouthEast-1
+	aki-fe1354ac     64bit
+	aki-f81354aa     32bit
+	
+	AP-NorthEast-1
+	aki-44992845     64bit
+	aki-42992843     32bit
+	
+	SA-East-1
+	aki-c48f51d9     64bit
+	aki-ca8f51d7     32bit
+	
         </param>
 
         <param type='string' name='ramdiskid'>
         The ramdiskid to be used to boot up receiver instance
         
-        default is 'ari-e3c1218a'
+        default is '' (it must be empty since we are using user selectable kernel)
         </param>
 
         <param type='string' name='instancetype'>
@@ -128,8 +160,8 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                             ('region', 'us-east-1'),
                             ('ami', 'ami-dbd102b2'),
                             ('securitygroups', 'default'),
-                            ('kernelid', 'aki-e5c1218c'),
-                            ('ramdiskid', 'ari-e3c1218a'),
+                            ('kernelid', 'aki-88aa75e1'),
+                            ('ramdiskid', ''),
                             ('instancetype', 't1.micro'),
                             ('snapshotdesc', ''),
                             ('instID', ''),
@@ -157,7 +189,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                 #
                 #let's check that the machine is not running
                 print 'physhost is %s; host is %s'  %  (physhost,host)
-                output = self.command('run.host', [ physhost,'/usr/sbin/xm list | grep %s' % host, 'collate=true' ] )
+                output = self.command('run.host', [ physhost,'/usr/bin/virsh list | grep %s' % host, 'collate=true' ] )
 
                 if len(output) > 1 :
                     self.abort("The vm " + host + " is still running (" + output + "). Please shut it down before running this command.")
@@ -199,9 +231,12 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                 starttime = globalStartTime
                 print 'Launching EC2 instances ...'
                 # Booting up both dump instance and receiver instance
-                conn = boto.ec2.connect_to_region(region, aws_access_key_id=accessKeyNum, aws_secret_access_key=secretAccessKeyNum)
+                conn = boto.ec2.connect_to_region(region, aws_access_key_id=accessKeyNum, 
+                        aws_secret_access_key=secretAccessKeyNum)
                 image = conn.get_image(ami)
-                res = image.run(min_count=2, max_count=2, key_name=keypair,security_groups=[securityGroups], kernel_id=kernelId, ramdisk_id=ramdiskId, instance_type=instanceType)
+                res = image.run(min_count=2, max_count=2, key_name=keypair, 
+                        security_groups=[securityGroups], kernel_id=kernelId, 
+                        ramdisk_id=ramdiskId, instance_type=instanceType)
                 dumpInstance = res.instances[0]
                 receiverInstance = res.instances[1]
                 while True:
@@ -263,14 +298,16 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                 while True:
                         if v.attachment_state() == 'attached':
                             #time.sleep(5)
-                            print 'New volume :' + v.id + ' has been successfully attached to instance ' + receiverInstance.id
+                            print 'New volume :' + v.id + ' has been successfully ' + \
+                                    'attached to instance ' + receiverInstance.id
                             break
                         time.sleep(3.0)
                         v.update()
                         print '.',
                         sys.stdout.flush()
                 #machine is runnnying let's see if has booted
-                scriptTemp = self.createSSHScript(credentialDir + '/' + keypair + '.pem', 'root', receiverInstance.dns_name)
+                scriptTemp = self.createSSHScript(credentialDir + '/' + keypair + '.pem', 
+                    'root', receiverInstance.dns_name)
                 retval = os.system('cp %s %s/ping-script.sh' % (scriptTemp, credentialDir))
                 if retval != 0:
                     self.abort('Could not copy the script to ping the host: ' + physhost )
@@ -305,18 +342,37 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                         self.abort('We can\'t figure out the disk of the virtual machine %s' % host)
                 (prefix, name) = self.db.fetchall()[0]
                 diskVM = os.path.join(prefix, name)
-                output = self.command('run.host', [physhost, "mkdir -p /mnt/rocksimage", 'collate=true'])
+                output = self.command('run.host', [physhost,
+                        "mkdir -p /mnt/rocksimage", 'collate=true'])
                 if len(output) > 1:
-                    self.abort('Problem with making the directory /mnt/rocksimage ' + 'on host ' + physhost + '. Error: ' + output)
-                output = self.command('run.host', [physhost, "lomount -diskimage %s -partition 1 /mnt/rocksimage" % diskVM, 'collate=true'])
+                        self.abort('Problem with making the directory /mnt/rocksimage ' +
+                                'on host ' + physhost + '. Error: ' + output)
+
+                #creating the /dev to be mounted
+                output = self.command('run.host', [physhost,
+                        "kpartx -a -v %s | head -n 1|awk '{print $3}'" % diskVM, 'collate=true'])
+                devPath = '/dev/mapper/' + output.strip()
+                output = self.command('run.host', [physhost, "ls " + devPath])
                 if len(output) > 1:
-                    self.abort('Problem mounting ' + diskVM + ' on host ' + physhost + '. Error: ' + output)
+                        self.abort('Problem mounting ' + diskVM + ' on host ' +
+                                physhost + '. Error: ' + output)
+
+                #ok the device is ready we can mount
+                output = self.command('run.host', [physhost,
+                        "mount " + devPath + " /mnt/rocksimage"])
+                #print "exec: mount " + devPath + " /mnt/rocksimage"
+                if len(output) > 1:
+                        self.command('run.host', [physhost, "kpartx -d %s" % diskVM, 
+                                'collate=true'])
+                        self.abort('Problem mounting the image: ' + output)
+
                 #Creating upload script
                 scriptTemp = self.createUploadScript('/mnt/rocksimage', receiverInstance.dns_name, port)
                 retval = os.system('scp -qr %s %s:%s/upload-script.sh ' % (scriptTemp, physhost, tempDir))
                 if retval != 0:
-                    self.abort('Could not copy the script to the host: ' + physhost )
+                        self.abort('Could not copy the script to the host: ' + physhost )
                 setupVolumeTime = datetime.now() - starttime
+
         
                 #
                 #  -------------                 Upload data section             ---------------------------------
@@ -324,6 +380,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                 startime = datetime.now()
                 print "Running the upload script this step may take up to 10 minutes"
                 output = os.system( 'ssh %s " bash %s/upload-script.sh"' % (physhost, tempDir))
+                self.command('run.host', [physhost, "kpartx -d %s" % diskVM, 'collate=true'])
                 uploadTime = datetime.now() - startime
 
                 #
@@ -333,30 +390,37 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                 print 'Running the final fixes on the disk'
                 #removing root password, fixing fstab, labeling disk
                 runCommandString = "e2label /dev/sdh /; rm -rf /mnt/tmp/etc/fstab ; " +\
-                                   "echo \'/dev/sda1 /        ext3    defaults       1 1\' > /mnt/tmp/etc/fstab; " +\
+                                   "echo \'/dev/xvde1 /        ext3    defaults       1 1\' > /mnt/tmp/etc/fstab; " +\
                                    "echo \'none      /mnt     ext3    defaults       0 0\' >> /mnt/tmp/etc/fstab; " +\
                                    "echo \'devpts    /dev/pts devpts  gid=5,mode=620 0 0\' >> /mnt/tmp/etc/fstab; " +\
+                                   "echo \'tmpfs     /dev/shm tmpfs   defaults       0 0\' >> /mnt/tmp/etc/fstab; " +\
                                    "echo \'proc      /proc    proc    defaults       0 0\' >> /mnt/tmp/etc/fstab; " +\
                                    "echo \'sysfs     /sys     sysfs   defaults       0 0\' >> /mnt/tmp/etc/fstab; " +\
-                                   "sed -i --expression='s/root:[^:]\{1,\}:/root:\!:/' /mnt/tmp/etc/shadow ; "
+                                   "BASEROOT=/mnt/tmp; GRUBDIR=$BASEROOT/boot/grub; " +\
+                                   "cp $GRUBDIR/grub.conf $GRUBDIR/grub-orig.conf; " +\
+                                   "sed -i 's/hd0,0/hd0/g' $GRUBDIR/grub.conf; " +\
+                                   """sed -i 's/kernel \([^ ]*\) .*/kernel \\1 root=\/dev\/xvde1/g' $GRUBDIR/grub.conf ; """
+                                   #"sed -i --expression='s/root:[^:]\{1,\}:/root:\!:/' /mnt/tmp/etc/shadow ; " 
+
                 if debug:
-                        runCommandString = runCommandString + "cat /mnt/tmp/etc/fstab; "
-                runCommandString = runCommandString + "umount -l /mnt/tmp "
+                        runCommandString = runCommandString + "cat /mnt/tmp/etc/fstab; cat $GRUBDIR/grub.conf ; "
+                runCommandString = runCommandString + "umount -l /mnt/tmp ; "
                 command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + receiverInstance.dns_name + ' "' + runCommandString + '"'
                 fin, fout = os.popen4(command)
 		#TODO no need to print this out
                 print fout.readlines()
                 print 'Revoke rule from security group'
-                conn.revoke_security_group(group_name=securityGroups, src_security_group_name='default', ip_protocol='udp', from_port=int(port), to_port=int(port), cidr_ip='0.0.0.0/0')
-                print 'Detaching volume'
+                conn.revoke_security_group(group_name=securityGroups, 
+                        src_security_group_name='default', ip_protocol='udp', from_port=int(port), to_port=int(port), cidr_ip='0.0.0.0/0')
+                print 'Detaching volume from receiver'
                 v.detach()
                 while True:
                         print '.',
                         sys.stdout.flush()
                         #print newVol.volume_state()
                         if v.volume_state() == 'available':
-                            print 'Volume :' + v.id + ' has been successfully detached from instance ' + receiverInstance.id
-                            break
+                                print 'Volume :' + v.id + ' has been successfully detached from instance ' + receiverInstance.id
+                                break
                         time.sleep(1.0)
                         v.update()
                 #Re-attach vol to /dev/sda1 of dump instance
@@ -366,9 +430,9 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                         print '.',
                         sys.stdout.flush()
                         if v.attachment_state() == 'attached':
-                            time.sleep(5)
-                            print 'New volume :' + v.id + ' has been successfully attached to instance ' + dumpInstance.id
-                            break
+                                time.sleep(5)
+                                print 'New volume :' + v.id + ' has been successfully attached to instance ' + dumpInstance.id
+                                break
                         time.sleep(1.0)
                         v.update()
                 print 'Terminating receiver instance'
