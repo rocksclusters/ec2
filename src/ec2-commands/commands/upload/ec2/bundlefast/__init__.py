@@ -1,6 +1,8 @@
-# $Id: __init__.py,v 1.11 2012/10/06 00:18:42 clem Exp $
+# $Id: __init__.py,v 1.12 2012/10/06 02:04:17 clem Exp $
 #
 # Minh Ngoc Nhat Huynh nnhuy2@student.monash.edu
+# Luca Clementi <luca.clementi@gmail.com>
+# 
 
 
 import os
@@ -65,10 +67,10 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
         default is 'us-east-1'
         </param>
 
-        <param type='string' name='ami'>
+        <param type='string' name='amireceiver'>
         The AMI to be used to boot receiver instance
 
-        default is 'ami-5fb16036'
+        default is 'ami-4594282c'
         </param>
 
         <param type='string' name='securitygroups'>
@@ -144,7 +146,6 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
         """
 
         def run(self, params, args):
-                #AMI = 'ami-5fb16036'
                 debug = False
                 (args, keypair) = self.fillPositionalArgs(('keypair',))
                 hosts = self.getHostnames(args)
@@ -155,10 +156,10 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                         host = hosts[0]
                 if not keypair:
                         self.abort('missing keypair')
-                (credentialDir, region, ami, securityGroups, kernelId, ramdiskId, instanceType, snapshotDesc, instID ) = self.fillParams( 
+                (credentialDir, region, amireceiver, securityGroups, kernelId, ramdiskId, instanceType, snapshotDesc, instID ) = self.fillParams( 
                             [('credentialdir','/root/.ec2'), 
                             ('region', 'us-east-1'),
-                            ('ami', 'ami-dbd102b2'),
+                            ('amireceiver', 'ami-4594282c'),
                             ('securitygroups', 'default'),
                             ('kernelid', 'aki-88aa75e1'),
                             ('ramdiskid', ''),
@@ -166,6 +167,9 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                             ('snapshotdesc', ''),
                             ('instID', ''),
                             ] )
+
+		#TODO update this image, move it to nbcr account and make it a parameter
+		amidump = 'ami-dbd102b2'
         
                 #
                 # the name of the physical host that will boot
@@ -233,12 +237,22 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                 # Booting up both dump instance and receiver instance
                 conn = boto.ec2.connect_to_region(region, aws_access_key_id=accessKeyNum, 
                         aws_secret_access_key=secretAccessKeyNum)
-                image = conn.get_image(ami)
-                res = image.run(min_count=2, max_count=2, key_name=keypair, 
+
+                image = conn.get_image(amidump)
+                res = image.run(min_count=1, max_count=1, key_name=keypair,
+                        security_groups=[securityGroups], kernel_id=kernelId,
+                        ramdisk_id=ramdiskId, instance_type=instanceType)
+		dumpInstance = res.instances[0]
+
+                image = conn.get_image(amireceiver)
+                if instanceType == 't1.micro':
+			# rocks 6 receiver is instance-store based 
+                        # so it does not support t1.micro instance
+                        instanceType = 'm1.small'
+                res = image.run(min_count=1, max_count=1, key_name=keypair, 
                         security_groups=[securityGroups], kernel_id=kernelId, 
                         ramdisk_id=ramdiskId, instance_type=instanceType)
-                dumpInstance = res.instances[0]
-                receiverInstance = res.instances[1]
+		receiverInstance = res.instances[0]
                 while True:
                         time.sleep(3.0)
                         dumpInstance.update()
