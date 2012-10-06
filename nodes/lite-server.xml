@@ -30,7 +30,7 @@
 
 <post>
 /opt/rocks/bin/rocks add appliance lite membership="Lightweight Appliance" node=lite-client graph=default compute=no public=yes
-
+/opt/rocks/bin/rocks add appliance attr lite ec2_enable value=true
 </post>
 
 </kickstart> 

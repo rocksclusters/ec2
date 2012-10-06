@@ -10,6 +10,9 @@
 
   <changelog>
   $Log: lite-client.xml,v $
+  Revision 1.2  2012/10/06 00:19:40  clem
+  A couple of touches to improve the lite appliance
+
   Revision 1.1  2011/01/13 22:37:18  phil
   Checkpoint. New version of ami/api tools, condor plugin. lightweight appliance
 
@@ -57,5 +60,26 @@ if [ ! -d  /mnt/cdrom ]; then
 fi
 
 </post>
+
+
+
+<!-- 
+     This section will contains the code to make the UDT receiver used by 
+     rocks upload ec2 bundlefast
+     To create this node use
+     rocks add host vm vm-container-0-0 "Lightweight Appliance"
+     rocks add host attr lite-0-0-0 udt_receiver true
+     rocks start host vm lite-0-0-0
+     ssh lite-0-0-0 poweroff
+     rocks create ec2 bundle lite-0-0-0
+     rocks update ec2 bundle lite-0-0-0
+-->
+
+<package cond="udt_receiver">foundation-python</package>
+
+<post cond="udt_receiver">
+
+</post>
+
 </kickstart> 
 
