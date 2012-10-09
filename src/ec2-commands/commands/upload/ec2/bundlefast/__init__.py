@@ -1,4 +1,4 @@
-# $Id: __init__.py,v 1.12 2012/10/06 02:04:17 clem Exp $
+# $Id: __init__.py,v 1.13 2012/10/09 17:20:37 clem Exp $
 #
 # Minh Ngoc Nhat Huynh nnhuy2@student.monash.edu
 # Luca Clementi <luca.clementi@gmail.com>
@@ -15,7 +15,7 @@ import boto
 import boto.ec2
 from boto.ec2.connection import EC2Connection
 from boto.ec2.blockdevicemapping import BlockDeviceType, BlockDeviceMapping
-import subprocess
+import subprocess, shlex
 from datetime import datetime
 
 class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.command):
@@ -70,7 +70,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
         <param type='string' name='amireceiver'>
         The AMI to be used to boot receiver instance
 
-        default is 'ami-4594282c'
+        default is 'ami-d01ea2b9'
         </param>
 
         <param type='string' name='securitygroups'>
@@ -159,7 +159,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                 (credentialDir, region, amireceiver, securityGroups, kernelId, ramdiskId, instanceType, snapshotDesc, instID ) = self.fillParams( 
                             [('credentialdir','/root/.ec2'), 
                             ('region', 'us-east-1'),
-                            ('amireceiver', 'ami-4594282c'),
+                            ('amireceiver', 'ami-d01ea2b9'),
                             ('securitygroups', 'default'),
                             ('kernelid', 'aki-88aa75e1'),
                             ('ramdiskid', ''),
@@ -168,6 +168,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                             ('instID', ''),
                             ] )
 
+		availability_zone = 'us-east-1a'
 		#TODO update this image, move it to nbcr account and make it a parameter
 		amidump = 'ami-dbd102b2'
         
@@ -192,7 +193,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                 #ok we have to bunble the vm host runnning on physhost
                 #
                 #let's check that the machine is not running
-                print 'physhost is %s; host is %s'  %  (physhost,host)
+                #print 'physhost is %s; host is %s'  %  (physhost,host)
                 output = self.command('run.host', [ physhost,'/usr/bin/virsh list | grep %s' % host, 'collate=true' ] )
 
                 if len(output) > 1 :
@@ -233,7 +234,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                 #some timing 
                 globalStartTime = datetime.now()
                 starttime = globalStartTime
-                print 'Launching EC2 instances ...'
+                print 'Launching receiver instance and new EC2 %s instance ...' % host
                 # Booting up both dump instance and receiver instance
                 conn = boto.ec2.connect_to_region(region, aws_access_key_id=accessKeyNum, 
                         aws_secret_access_key=secretAccessKeyNum)
@@ -241,7 +242,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                 image = conn.get_image(amidump)
                 res = image.run(min_count=1, max_count=1, key_name=keypair,
                         security_groups=[securityGroups], kernel_id=kernelId,
-                        ramdisk_id=ramdiskId, instance_type=instanceType)
+                        ramdisk_id=ramdiskId, instance_type=instanceType, placement=availability_zone)
 		dumpInstance = res.instances[0]
 
                 image = conn.get_image(amireceiver)
@@ -251,7 +252,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                         instanceType = 'm1.small'
                 res = image.run(min_count=1, max_count=1, key_name=keypair, 
                         security_groups=[securityGroups], kernel_id=kernelId, 
-                        ramdisk_id=ramdiskId, instance_type=instanceType)
+                        ramdisk_id=ramdiskId, instance_type=instanceType, placement=availability_zone)
 		receiverInstance = res.instances[0]
                 while True:
                         time.sleep(3.0)
@@ -261,9 +262,8 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                         if dumpInstance.state == 'running':
                                 break;
                 dns_dumpInstance = dumpInstance.dns_name
-                print 'Instance dump started. Public DNS: ', dns_dumpInstance, ' Instance ID: ', dumpInstance.id 
+                print 'New ' + host + ' instance started. Public DNS: ', dns_dumpInstance, ' Instance ID: ', dumpInstance.id 
                 #now I stop dump instance
-                print 'Stopping dump instance'
                 conn.stop_instances([dumpInstance.id], force=True)
                 while True:
                         time.sleep(3.0)
@@ -272,14 +272,14 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                         sys.stdout.flush()
                         if dumpInstance.state == 'stopped':
                                 break;
-                print 'Instance dump stopped'
+                print 'New ' + host + ' instance stopped'
                 bootUpTime = datetime.now() - starttime
 
                 #
                 #  -------------                 attach volume section             ---------------------------------
                 # 
                 starttime = datetime.now()
-                print 'Detaching volume from dump instance'
+                print 'Detaching volume from new instance'
                 #Get EBS volume id of dump instance and detach
                 allvols = conn.get_all_volumes()
                 for v in allvols:
@@ -338,15 +338,19 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                 print 'Granting access to instance'
                 #TODO authorize only the frontend IP as a source IP 
                 try:
-                        conn.authorize_security_group(group_name=securityGroups, src_security_group_name='default', ip_protocol='udp', from_port=9000, to_port=9000, cidr_ip='0.0.0.0/0')
+                        conn.authorize_security_group(group_name=securityGroups, 
+                                src_security_group_name='default', ip_protocol='udp', 
+                                from_port=9000, to_port=9000, cidr_ip='0.0.0.0/0')
 		except boto.exception.EC2ResponseError:
                         print "Firewall rules is already present, not a problem"
                 print 'Formatting volume and mounting'
-                runCommandString = "yes | mkfs -t ext3 /dev/sdh; mkdir -p /mnt/tmp; mount /dev/sdh /mnt/tmp; " +\
-                                   "bash ~/udt/server.sh </dev/null >/dev/null 2>&1 & " 
-                command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + receiverInstance.dns_name + ' "' + runCommandString + '"'
-                fin, fout = os.popen4(command)
-                print fout.readlines()
+                runCommandString = "yes | mkfs -t ext3 /dev/xvdl ; mkdir -p /mnt/tmp; " +\
+                        "mount /dev/xvdl /mnt/tmp; /opt/udt4/bin/server.sh </dev/null >/dev/null 2>&1 & " 
+                print "contacting receive instance at " +  receiverInstance.dns_name
+                command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + \
+                        ' root@' + receiverInstance.dns_name + ' "' + runCommandString + '"'
+                # fix encoding bug with shlex see https://review.openstack.org/#/c/5335/
+                p2 = subprocess.call(shlex.split(command.encode('ascii')))
                 print "Mounting local file systems"
                 rows = self.db.execute("""select vmd.prefix, vmd.name 
                          from nodes n, vm_disks vmd, vm_nodes vm 
@@ -403,7 +407,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                 starttime = datetime.now()
                 print 'Running the final fixes on the disk'
                 #removing root password, fixing fstab, labeling disk
-                runCommandString = "e2label /dev/sdh /; rm -rf /mnt/tmp/etc/fstab ; " +\
+                runCommandString = "e2label /dev/xvdl /; rm -rf /mnt/tmp/etc/fstab ; " +\
                                    "echo \'/dev/xvde1 /        ext3    defaults       1 1\' > /mnt/tmp/etc/fstab; " +\
                                    "echo \'none      /mnt     ext3    defaults       0 0\' >> /mnt/tmp/etc/fstab; " +\
                                    "echo \'devpts    /dev/pts devpts  gid=5,mode=620 0 0\' >> /mnt/tmp/etc/fstab; " +\
@@ -420,9 +424,9 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                         runCommandString = runCommandString + "cat /mnt/tmp/etc/fstab; cat $GRUBDIR/grub.conf ; "
                 runCommandString = runCommandString + "umount -l /mnt/tmp ; "
                 command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + ' root@' + receiverInstance.dns_name + ' "' + runCommandString + '"'
-                fin, fout = os.popen4(command)
-		#TODO no need to print this out
-                print fout.readlines()
+                # fix encoding bug with shlex see https://review.openstack.org/#/c/5335/
+                p2 = subprocess.call(shlex.split(command.encode('ascii')))
+                #TODO no need to print this out
                 print 'Revoke rule from security group'
                 conn.revoke_security_group(group_name=securityGroups, 
                         src_security_group_name='default', ip_protocol='udp', from_port=int(port), to_port=int(port), cidr_ip='0.0.0.0/0')
