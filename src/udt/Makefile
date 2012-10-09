@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.4 2012/02/15 21:38:40 nnhuy2 Exp $
+# $Id: Makefile,v 1.5 2012/10/09 17:13:21 clem Exp $
 #
 # @Copyright@
 # 
@@ -54,6 +54,9 @@
 # @Copyright@
 #
 # $Log: Makefile,v $
+# Revision 1.5  2012/10/09 17:13:21  clem
+# script to start the receiver server is not in the udt4 package
+#
 # Revision 1.4  2012/02/15 21:38:40  nnhuy2
 # *** empty log message ***
 #
@@ -112,6 +115,7 @@ install::
 		cd ../app;						\
 		install -m 755 $(APPS) $(ROOT)/$(PKGROOT)/$(NAME)/bin ;	\
 	)
+	install -m 755 server.sh $(ROOT)/$(PKGROOT)/$(NAME)/bin
 	mkdir -p $(ROOT)/etc/ld.so.conf.d
 	echo "$(PKGROOT)/$(NAME)/lib" > $(ROOT)/etc/ld.so.conf.d/udt4.conf
 	mkdir -p $(ROOT)/etc/profile.d
