@@ -29,7 +29,7 @@ EC2-enabled Client
 <!-- Get the user's authorized key as root's key using Amazon published method-->
 <file name="/etc/rc.d/init.d/ec2-root-ssh" perms="755">
 <![CDATA[#!/bin/sh
-# $Id: ec2-client.xml,v 1.17 2012/09/24 18:47:08 clem Exp $
+# $Id: ec2-client.xml,v 1.18 2012/10/09 17:12:31 clem Exp $
 #
 # chkconfig: 2345 60 40
 # description: ec2 ssh key access
@@ -81,6 +81,10 @@ function setMount(){
     # http://docs.amazonwebservices.com/AWSEC2/latest/UserGuide/InstanceStorage.html#InstanceStoreDeviceNames
     #
     OrginalDevice=`curl http://169.254.169.254/2009-04-04/meta-data/block-device-mapping/ephemeral0`
+    if [ "$?" != "0" ]; then
+        echo "No ephemeral device found"
+        return ;
+    fi
     NewDevName=xvd`shiftChar ${OrginalDevice:2:1}`
     if [ ${#OrginalDevice} == 4 ]; then
         #we need the partition number
