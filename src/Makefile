@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.1 2009/06/01 07:02:23 phil Exp $
+# $Id: Makefile,v 1.2 2012/11/21 19:32:15 clem Exp $
 #
 # @Copyright@
 # 
@@ -54,6 +54,9 @@
 # @Copyright@
 #
 # $Log: Makefile,v $
+# Revision 1.2  2012/11/21 19:32:15  clem
+# fix makefile so that compilation aborts if there is any problem
+#
 # Revision 1.1  2009/06/01 07:02:23  phil
 # Checkpoint
 #
@@ -87,5 +90,7 @@ default:	rpm
 
 copyright rpm clean::
 	for i in $(SRCDIRS) ; do \
-		(cd $$i; make $@) ; \
+		cd $$i; \
+		$(MAKE) $@ || exit 2 ; \
+		cd -; \
 	done
