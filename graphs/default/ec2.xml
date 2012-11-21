@@ -81,7 +81,9 @@
 	<edge from="server">
 		<to>ec2-server</to>
 		<to>ec2-common</to>
+		<to>lite-server</to>
 	</edge>
+
 
 	<!-- ec2 tools on any node that is a Xen Dom0 --> 
 	<edge from="client" cond="xen">
