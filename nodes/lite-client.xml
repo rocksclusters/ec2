@@ -10,6 +10,9 @@
 
   <changelog>
   $Log: lite-client.xml,v $
+  Revision 1.3  2012/11/22 02:52:31  clem
+  Adding init script to run postinstall config on the lite-appliance
+
   Revision 1.2  2012/10/06 00:19:40  clem
   A couple of touches to improve the lite appliance
 
@@ -65,7 +68,9 @@ fi
 
 <!-- 
      This section will contains the code to make the UDT receiver used by 
-     rocks upload ec2 bundlefast
+     rocks upload ec2 bundlefast. All the code needed by the udt receiver 
+     is inside the udt4 rpm package now which is installed on all the nodes.
+
      To create this node use
      rocks add host vm vm-container-0-0 "Lightweight Appliance"
      rocks add host attr lite-0-0-0 udt_receiver true
@@ -73,6 +78,7 @@ fi
      ssh lite-0-0-0 poweroff
      rocks create ec2 bundle lite-0-0-0
      rocks update ec2 bundle lite-0-0-0
+
 -->
 
 <package cond="udt_receiver">foundation-python</package>
@@ -80,6 +86,69 @@ fi
 <post cond="udt_receiver">
 
 </post>
+
+<post cond="base_lite">
+
+<!-- Get the user's authorized key as root's key using Amazon published method-->
+<file name="/etc/rc.d/init.d/ec2-postinstall" perms="755">
+<![CDATA[#!/bin/sh
+#
+# chkconfig: 2345 60 40
+# description: ec2 postinstall functions
+#
+. /etc/rc.d/init.d/functions
+
+RETVAL=0
+
+runpostinstall() {
+#
+# Fetch the new kickstart file
+#
+URL="https://137.110.119.100/install/sbin/EC2kickstart.cgi?arch=x86_64&np=1"
+curl --insecure "$URL" > /root/postinstall.xml  2>/dev/null
+while [ "$?" -ne "0" ] ; do
+	sleep 2
+	curl --insecure "$URL" > /root/postinstall.xml  2>/dev/null
+done
+
+cat /root/postinstall.xml | rocks list host profile > /root/postinstall.ks
+rocks run ec2 postinstall /root/postinstall.ks | rocks list host profile
+
+}
+
+case "$1" in
+   start)
+	echo -n "Downloading kickstart file..."
+	runpostinstall
+	RETVAL=$?
+	echo
+	[ $RETVAL -eq 0 ] 
+	;;
+
+  stop)
+      echo -n "Retrive kickstart file "
+	[ $RETVAL -eq 0 ]
+	;;
+
+  restart|reload)
+   	$0 stop
+   	$0 start
+   	RETVAL=$?
+	;;
+  *)
+	echo "Usage: $0 {start|stop|restart}"
+	exit 1
+esac
+
+exit $RETVAL
+
+]]>
+</file>
+
+chkconfig --add ec2-postinstall
+</post>
+
+
 
 </kickstart> 
 
