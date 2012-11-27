@@ -10,6 +10,9 @@
 
   <changelog>
   $Log: lite-client.xml,v $
+  Revision 1.5  2012/11/27 03:22:35  clem
+  creates temporary directory to store downloaded rpm
+
   Revision 1.4  2012/11/27 03:21:14  clem
   now it logs something when running
 
@@ -118,6 +121,7 @@ while [ "$?" -ne "0" ] ; do
 done
 
 cat /root/postinstall.xml | rocks list host profile > /root/postinstall.ks
+mkdir /mnt/temp
 rocks run ec2 postinstall /root/postinstall.ks 2>> $LOGFILE
 
 }
