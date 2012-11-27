@@ -10,6 +10,9 @@
 
   <changelog>
   $Log: lite-client.xml,v $
+  Revision 1.4  2012/11/27 03:21:14  clem
+  now it logs something when running
+
   Revision 1.3  2012/11/22 02:52:31  clem
   Adding init script to run postinstall config on the lite-appliance
 
@@ -103,16 +106,19 @@ RETVAL=0
 runpostinstall() {
 #
 # Fetch the new kickstart file
-#
+#a
+
+LOGFILE=/var/log/postinstall.log
 URL="https://137.110.119.100/install/sbin/EC2kickstart.cgi?arch=x86_64&np=1"
-curl --insecure "$URL" > /root/postinstall.xml  2>/dev/null
+echo Downloading kickstart from frontend $URL > $LOGFILE
+curl --insecure "$URL" > /root/postinstall.xml  2>> $LOGFILE
 while [ "$?" -ne "0" ] ; do
 	sleep 2
-	curl --insecure "$URL" > /root/postinstall.xml  2>/dev/null
+	curl --insecure "$URL" > /root/postinstall.xml  2>> $LOGFILE
 done
 
 cat /root/postinstall.xml | rocks list host profile > /root/postinstall.ks
-rocks run ec2 postinstall /root/postinstall.ks | rocks list host profile
+rocks run ec2 postinstall /root/postinstall.ks 2>> $LOGFILE
 
 }
 
