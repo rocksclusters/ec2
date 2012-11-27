@@ -1,4 +1,4 @@
-# $Id: __init__.py,v 1.5 2012/11/27 03:20:51 clem Exp $
+# $Id: __init__.py,v 1.6 2012/11/27 03:44:11 clem Exp $
 #
 # @Copyright@
 # 
@@ -102,23 +102,27 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.run.command):
 				break
 			else:
 				packages.append(line.strip())
-	
-		subprocess.Popen( ['yumdownloader', '--resolve', '--destdir', '/mnt/temp'] \
-				+ packages, stdin=subprocess.PIPE, stdout=subprocess.PIPE, \
-				stderr=subprocess.PIPE).wait()
-
-		subprocess.Popen('rpm --nodeps -Uh /mnt/temp/*.rpm', shell=True, \
-				stdin=subprocess.PIPE, stdout=subprocess.PIPE, \
-				stderr=subprocess.PIPE).wait()
 
 
 		#
 		# get current installed rpms list
 		#
-                #stdout = subprocess.Popen( ['rpm','-qa'], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                #        stderr=subprocess.PIPE).stdout
-                #installedRpms = stdout.read().strip()
-		#installedRpms = installedRpms.split('\n')
+                stdout = subprocess.Popen( ['rpm','-qa'], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE).stdout
+                installedRpms = stdout.read().strip()
+		installedRpms = installedRpms.split('\n')
+
+		print " - postinstall - Download RPMs..."	
+		subprocess.Popen( ['yumdownloader', '--resolve', '--destdir', '/mnt/temp', \
+				'--exclude=' + string.join(installedRpms, ',')] + \
+				packages, stdin=subprocess.PIPE, stdout=subprocess.PIPE, \
+				stderr=subprocess.PIPE).wait()
+
+		print " - postinstall - Installing downloaded RPMs..."
+		subprocess.Popen('rpm --nodeps -Uh /mnt/temp/*.rpm', shell=True, \
+				stdin=subprocess.PIPE, stdout=subprocess.PIPE, \
+				stderr=subprocess.PIPE).wait()
+
 
 
 
