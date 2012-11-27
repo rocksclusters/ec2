@@ -1,4 +1,4 @@
-# $Id: __init__.py,v 1.4 2012/11/22 02:53:13 clem Exp $
+# $Id: __init__.py,v 1.5 2012/11/27 03:20:51 clem Exp $
 #
 # @Copyright@
 # 
@@ -102,8 +102,15 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.run.command):
 				break
 			else:
 				packages.append(line.strip())
-		print "newPakcages: ", string.join(packages, ' ')
-		
+	
+		subprocess.Popen( ['yumdownloader', '--resolve', '--destdir', '/mnt/temp'] \
+				+ packages, stdin=subprocess.PIPE, stdout=subprocess.PIPE, \
+				stderr=subprocess.PIPE).wait()
+
+		subprocess.Popen('rpm --nodeps -Uh /mnt/temp/*.rpm', shell=True, \
+				stdin=subprocess.PIPE, stdout=subprocess.PIPE, \
+				stderr=subprocess.PIPE).wait()
+
 
 		#
 		# get current installed rpms list
