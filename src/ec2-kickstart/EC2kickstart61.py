@@ -1,6 +1,6 @@
 #! /opt/rocks/bin/python
 #
-# $Id: EC2kickstart61.py,v 1.2 2012/09/19 18:53:49 clem Exp $
+# $Id: EC2kickstart61.py,v 1.3 2012/11/27 03:20:12 clem Exp $
 #
 # @Copyright@
 # 
@@ -66,25 +66,41 @@ import sys
 kickstart = imp.load_source("kickstart", "/export/rocks/install/sbin/kickstart.cgi")
 
 class AppEC2(kickstart.App):
-	"""We are extending App in kickstart.cgi and overloading the isInternal method 
-	to behave as we want """
+	"""We are extending App in kickstart.cgi and overloading the method:
+	  isInternal 
+	  getNodeName
+	so they do what we want in this case """
 
 	def isInternal(self):
 		"""Returns true if the client request is inside our private
 		network."""
 
+		syslog.syslog("EC2kickstart.cgi: client is " + str(self.clientList))
+
 		query = 'select ip from nodes, networks, subnets ' +\
 			'where nodes.id = networks.node and ' +\
 			'subnets.name = "ec2public" and subnets.id = networks.subnet ' +\
 			'and nodes.name = "%s";' % self.clientList[0]
-
 		self.execute(query)
+
 		for ip in self.fetchall()[0]:
 			if self.clientList[-1] == ip :
 				#remote ip matches the one in the database
 				return True
 
 		return False
+
+        def getNodeName(self, id):
+                self.execute("""select networks.name from networks,subnets
+                        where node = %d and
+                        networks.subnet = subnets.id and
+                        (networks.device is NULL or
+                        networks.device not like 'vlan%%') """ % id)
+                try:
+                        name, = self.fetchone()
+                except TypeError:
+                        name = 'localhost'
+                return name
 
 
 
