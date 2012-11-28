@@ -10,6 +10,9 @@
 
   <changelog>
   $Log: lite-client.xml,v $
+  Revision 1.6  2012/11/28 02:04:45  clem
+  i need an extra package
+
   Revision 1.5  2012/11/27 03:22:35  clem
   creates temporary directory to store downloaded rpm
 
@@ -53,6 +56,8 @@ touch /tmp/rocks-skip-welcome
 
 <package>openssl</package>
 <package>foundation-python</package>
+<package>yum-utils</package><!-- we need this for yumdownloader -->
+
 
 <post>
 <file name="/etc/motd" mode="append">
