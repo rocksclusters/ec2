@@ -1,4 +1,4 @@
-# $Id: __init__.py,v 1.14 2012/10/09 23:48:32 clem Exp $
+# $Id: __init__.py,v 1.15 2012/11/28 02:03:16 clem Exp $
 #
 # Minh Ngoc Nhat Huynh nnhuy2@student.monash.edu
 # Luca Clementi <luca.clementi@gmail.com>
@@ -30,7 +30,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
         <arg type='string' name='keypair'>
         The name of the ssh keypair that will be used to lunch the receiver instance. 
 	The corresponding public key must be present on the frontend node under the 
-	
+	credentialdir with the name keypair.pem
         </arg>
 
         <param type='string' name='credentialdir'>
