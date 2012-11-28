@@ -10,6 +10,12 @@
 
   <changelog>
   $Log: lite-client.xml,v $
+  Revision 1.7  2012/11/28 23:48:57  clem
+  several fixes:
+   - disabling ec2-postinstall after first run
+   - added check to verify if we are inside EC2 before proceeding
+   - made a log file with all the stuff
+
   Revision 1.6  2012/11/28 02:04:45  clem
   i need an extra package
 
@@ -112,10 +118,20 @@ fi
 RETVAL=0
 
 runpostinstall() {
+
+
+#
+# check if we're inisde EC2
+#
+curl http://169.254.169.254/2009-04-04/meta-data/
+if [ "$?" != "0" ]; then
+	echo "We are not inside EC2 stopping"
+	return ;
+fi
+
 #
 # Fetch the new kickstart file
-#a
-
+#
 LOGFILE=/var/log/postinstall.log
 URL="https://137.110.119.100/install/sbin/EC2kickstart.cgi?arch=x86_64&np=1"
 echo Downloading kickstart from frontend $URL > $LOGFILE
@@ -125,9 +141,11 @@ while [ "$?" -ne "0" ] ; do
 	curl --insecure "$URL" > /root/postinstall.xml  2>> $LOGFILE
 done
 
-cat /root/postinstall.xml | rocks list host profile > /root/postinstall.ks
+cat /root/postinstall.xml | /opt/rocks/bin/rocks list host profile > /root/postinstall.ks
 mkdir /mnt/temp
-rocks run ec2 postinstall /root/postinstall.ks 2>> $LOGFILE
+/opt/rocks/bin/rocks run ec2 postinstall /root/postinstall.ks >> $LOGFILE 2>&1
+#removing this service from boot
+/sbin/chkconfig  ec2-postinstall off
 
 }
 
