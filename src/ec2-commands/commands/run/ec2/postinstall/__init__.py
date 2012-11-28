@@ -1,4 +1,4 @@
-# $Id: __init__.py,v 1.6 2012/11/27 03:44:11 clem Exp $
+# $Id: __init__.py,v 1.7 2012/11/28 02:04:12 clem Exp $
 #
 # @Copyright@
 # 
@@ -59,13 +59,37 @@
 import sys
 import os
 import subprocess
+from subprocess import PIPE
 import string
 import rocks.commands
+import StringIO
+import rocks.gen
+from xml.dom.ext.reader import Sax2
+
+import xml.etree.ElementTree
+
+
+
+
+def getOutputAsList(binary, inputString=None):
+    """ run popen pipe inputString and return a touple of
+    (the stdout as a list of string, return value of the command)
+    """
+    p = subprocess.Popen(binary, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
+    grep_stdout = p.communicate(input=inputString)[0]
+    p.wait()
+    return (grep_stdout.split('\n'), p.returncode)
+
+
+
 
 class Command(rocks.commands.HostArgumentProcessor, rocks.commands.run.command):
 	"""
 	This script can re-run a kickstart on an already installed host and 
 	perform the remaining part of the script.
+
+	It expects the installed kickstart from anaconda in /root/anaconda-ks.cfg
+	and the xml of the desired kickstart in /root/postinstall.xml
 
 	<arg type='string' name='file'>
 	The path to the file containing the kickstart file to be run on this 
@@ -80,6 +104,10 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.run.command):
 
 
 	def run(self, params, args):
+
+		anacondaKickstart = '/root/anaconda-ks.cfg' 
+		postinstallXml = '/root/postinstall.xml'
+
 		(args, file) = self.fillPositionalArgs(('file',))
 	
 		if not file:
@@ -107,22 +135,90 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.run.command):
 		#
 		# get current installed rpms list
 		#
-                stdout = subprocess.Popen( ['rpm','-qa'], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE).stdout
-                installedRpms = stdout.read().strip()
-		installedRpms = installedRpms.split('\n')
-
-		print " - postinstall - Download RPMs..."	
-		subprocess.Popen( ['yumdownloader', '--resolve', '--destdir', '/mnt/temp', \
-				'--exclude=' + string.join(installedRpms, ',')] + \
-				packages, stdin=subprocess.PIPE, stdout=subprocess.PIPE, \
-				stderr=subprocess.PIPE).wait()
-
+		(installedRpms, ret) = getOutputAsList('rpm -qa', None)
+		print " - postinstall - Download RPMs..."
+		cmd = ['yumdownloader', '--resolve', '--destdir', '/mnt/temp', \
+                                '--exclude=' + string.join(installedRpms, ',')] + packages
+		cmd = string.join(cmd, " ")
+		print " - execuing: ", cmd
+		getOutputAsList(cmd, None)
 		print " - postinstall - Installing downloaded RPMs..."
-		subprocess.Popen('rpm --nodeps -Uh /mnt/temp/*.rpm', shell=True, \
-				stdin=subprocess.PIPE, stdout=subprocess.PIPE, \
-				stderr=subprocess.PIPE).wait()
+		getOutputAsList('rpm --nodeps -Uh /mnt/temp/*.rpm', None)
 
 
+		#
+		# executing the postsection
+		# first generate the xml kickstart with only the necessary postsections
+		#
+		excludedPackage = ['./nodes/grub-client.xml', './nodes/client-firewall.xml', 'ntp-client.xml', 
+			'./nodes/partitions-save.xml', './nodes/resolv.xml', './nodes/routes-client.xml', 
+			'./nodes/syslog-client.xml']
+		#get already run nodes
+		cmd = "grep 'begin post section' " + anacondaKickstart + " | awk -F ':' '{print $1}' | sort -u "
+		(nodesRunned, ret) = getOutputAsList(cmd, None)
+		if ret != 0:
+			self.abort("unable to get the list of executed nodes.")
+		#get nodes to be executed
+		cmd = """grep '<post' """ + postinstallXml + """ | awk -F 'file=' '{print $2}' |sort -u |awk -F '"' '{print $2}'"""
+		(nodesNewKickstart, ret) = getOutputAsList(cmd, None)
+		if ret != 0:
+			self.abort("unable to get the list of nodes to be executed.")
+		#make the diff
+		nodesTobeRun = 	[]
+		for node in nodesNewKickstart:
+			if node in excludedPackage:
+				continue
+			if node in nodesRunned:
+				continue
+			nodesTobeRun.append(node)
+		print "List of nodes that will be executed: ", nodesTobeRun
+		tree = xml.etree.ElementTree.parse( postinstallXml )
+		root = tree.getroot()
+		for node in root.findall("post"):
+			if "file" in node.attrib and node.attrib["file"] in nodesTobeRun:
+				#let's keep this node we need to execute it
+				pass
+			else:
+				root.remove(node)
+		#save this for debugging
+		tree.write("/tmp/tempKickstart.xml")	
+		print "xml kickstart saved in /tmp/tempKickstart.xml"
+		buffer = StringIO.StringIO()
+		tree.write(buffer)
+		buffer.seek(0)
+
+		#
+		# now that we have the xml kickstart let's generate the script
+		#
+		script = []
+		script.append('#!/bin/sh\n')
+		reader = Sax2.Reader()
+		gen = getattr(rocks.gen,'Generator_%s' % self.os)()
+		gen.setOS(self.os)
+		gen.parse( buffer.getvalue() )
+		cur_proc = False
+		for line in gen.generate('post'):
+			if not line.startswith('%post'):
+				script.append(line)
+			else:
+				if cur_proc == True:
+					script.append('__POSTEOF__\n')
+					script.append('%s %s\n' % (interpreter, t_name))
+					cur_proc = False
+				try:
+					i = line.split().index('--interpreter')
+				except ValueError:
+					continue
+				interpreter = line.split()[i+1]
+				t_name = tempfile.mktemp()
+				cur_proc = True
+				script.append('cat > %s << "__POSTEOF__"\n' % t_name)
+		
+		#keep this for debuging
+		fd = open("/tmp/kickstart.sh", 'w')
+		fd.write(string.join(script, ''))
+		fd.close()
+		print "shell kickstart saved in /tmp/tempKickstart.xml, executing it..."
+		os.system( string.join(script, '') )
 
 
