@@ -1,4 +1,4 @@
-# $Id: __init__.py,v 1.7 2012/11/28 02:04:12 clem Exp $
+# $Id: __init__.py,v 1.8 2012/11/29 01:19:21 clem Exp $
 #
 # @Copyright@
 # 
@@ -136,6 +136,9 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.run.command):
 		# get current installed rpms list
 		#
 		(installedRpms, ret) = getOutputAsList('rpm -qa', None)
+		#plz no rocks-grub
+		excludeRpm = ['rocks-boot-auto']
+		installedRpms = installedRpms + excludeRpm
 		print " - postinstall - Download RPMs..."
 		cmd = ['yumdownloader', '--resolve', '--destdir', '/mnt/temp', \
                                 '--exclude=' + string.join(installedRpms, ',')] + packages
@@ -143,16 +146,19 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.run.command):
 		print " - execuing: ", cmd
 		getOutputAsList(cmd, None)
 		print " - postinstall - Installing downloaded RPMs..."
-		getOutputAsList('rpm --nodeps -Uh /mnt/temp/*.rpm', None)
+		getOutputAsList('rpm --force --nodeps -ih /mnt/temp/*.rpm', None)
 
 
 		#
 		# executing the postsection
 		# first generate the xml kickstart with only the necessary postsections
 		#
-		excludedPackage = ['./nodes/grub-client.xml', './nodes/client-firewall.xml', 'ntp-client.xml', 
-			'./nodes/partitions-save.xml', './nodes/resolv.xml', './nodes/routes-client.xml', 
-			'./nodes/syslog-client.xml']
+		# grub and grub-client  -> avoid messing ec2 grub menu
+		# hpc-client            -> MaxStartups messes up the sshd.config
+		# ntp-client, resolve, syslog,routes	-> private ip addresses
+		excludedPackage = ['./nodes/grub.xml', './nodes/grub-client.xml', './nodes/client-firewall.xml', 
+			'./nodes/ntp-client.xml', './nodes/partitions-save.xml', './nodes/resolv.xml', 
+			'./nodes/routes-client.xml', './nodes/syslog-client.xml', './nodes/hpc-client.xml']
 		#get already run nodes
 		cmd = "grep 'begin post section' " + anacondaKickstart + " | awk -F ':' '{print $1}' | sort -u "
 		(nodesRunned, ret) = getOutputAsList(cmd, None)
