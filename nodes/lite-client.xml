@@ -10,6 +10,10 @@
 
   <changelog>
   $Log: lite-client.xml,v $
+  Revision 1.8  2012/11/30 20:39:03  clem
+  better detection of error in the startup script
+  moved after the ec2-ssh init script
+
   Revision 1.7  2012/11/28 23:48:57  clem
   several fixes:
    - disabling ec2-postinstall after first run
@@ -110,7 +114,7 @@ fi
 <file name="/etc/rc.d/init.d/ec2-postinstall" perms="755">
 <![CDATA[#!/bin/sh
 #
-# chkconfig: 2345 60 40
+# chkconfig: 2345 61 40
 # description: ec2 postinstall functions
 #
 . /etc/rc.d/init.d/functions
@@ -132,16 +136,19 @@ fi
 #
 # Fetch the new kickstart file
 #
+XMLKICKSTART=/root/postinstall.xml
 LOGFILE=/var/log/postinstall.log
 URL="https://137.110.119.100/install/sbin/EC2kickstart.cgi?arch=x86_64&np=1"
 echo Downloading kickstart from frontend $URL > $LOGFILE
-curl --insecure "$URL" > /root/postinstall.xml  2>> $LOGFILE
+curl --insecure "$URL" > $XMLKICKSTART 2>> $LOGFILE
+xmllint $XMLKICKSTART &> /dev/null
 while [ "$?" -ne "0" ] ; do
 	sleep 2
-	curl --insecure "$URL" > /root/postinstall.xml  2>> $LOGFILE
+	curl --insecure "$URL" > $XMLKICKSTART  2>> $LOGFILE
+	xmllint $XMLKICKSTART &> /dev/null
 done
 
-cat /root/postinstall.xml | /opt/rocks/bin/rocks list host profile > /root/postinstall.ks
+cat $XMLKICKSTART | /opt/rocks/bin/rocks list host profile > /root/postinstall.ks
 mkdir /mnt/temp
 /opt/rocks/bin/rocks run ec2 postinstall /root/postinstall.ks >> $LOGFILE 2>&1
 #removing this service from boot
