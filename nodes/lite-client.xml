@@ -10,6 +10,9 @@
 
   <changelog>
   $Log: lite-client.xml,v $
+  Revision 1.9  2012/11/30 22:48:33  clem
+  and.... a final reboot.
+
   Revision 1.8  2012/11/30 20:39:03  clem
   better detection of error in the startup script
   moved after the ec2-ssh init script
@@ -153,6 +156,7 @@ mkdir /mnt/temp
 /opt/rocks/bin/rocks run ec2 postinstall /root/postinstall.ks >> $LOGFILE 2>&1
 #removing this service from boot
 /sbin/chkconfig  ec2-postinstall off
+/sbin/reboot
 
 }
 
