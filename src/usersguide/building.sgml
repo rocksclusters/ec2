@@ -256,7 +256,7 @@ section to create a virtual development appliance.
 uploaded into Amazon's EBS (Elastic Block Storage). To do so you need to place you 
 ssh key inside the credential directory.
 <screen>
-# rocks upload ec2 bundlefast devel-server-0-0-0 phil-aws
+# rocks upload ec2 bundlefast devel-server-0-0-0 clem
 Launching receiver instance and new EC2 compute-0-0-0 instance ...
 . . . . . . . . . . . . . 
 New compute-0-0-0 instance started. Public DNS:  ec2-54-242-13-118.compute-1.amazonaws.com  Instance ID:  i-e17ffc90
@@ -299,11 +299,10 @@ Terminating receiver instance
 
 <listitem>
 <para> After the previous step you should see an instance in terminated state and 
-and instance in a stopped state.
+and an instance in stopped state.
 <screen>
 export EC2_PRIVATE_KEY=/root/.ec2/pk.pem
 export EC2_CERT=/root/.ec2/cert.pem 
-# ec2-describe-instances
 # ec2-describe-instances
 RESERVATION	r-7a575402	277989259740	default
 INSTANCE	i-3b3cbe4a	ami-e4f54a8d			stopped	clem	0		t1.micro	2013-01-08T19:41:13+0000	us-east-1a	aki-88aa75e1	ari-e3c1218a		monitoring-disabled					ebs					paravirtual	xen	sg-0558ba6c	default	false	
@@ -312,7 +311,9 @@ RESERVATION	r-7457540c	277989259740	default
 INSTANCE	i-253cbe54	ami-e4f54a8d			terminated	clem	0		t1.micro	2013-01-08T19:41:14+0000	us-east-1a	aki-88aa75e1	ari-e3c1218a		monitoring-disabled					ebs					paravirtual	xen		sg-0558ba6c	default	false	
 </screen>
 </para>
+</listitem>
 
+<listitem>
 <para>Start the stopped instance, login to it and verify that everything is 
 as expected. After that you can poweroff the instance.
 <screen>

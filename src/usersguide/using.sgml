@@ -96,9 +96,10 @@ Rocks EC2 provides a single command to upload a disk image into an EBS volume,
 the disk image must be single partition. In this case there is no need to 
 bundle the disk in the AMI format (unlike the S3 backed AMI). To transfer the 
 data Rocks uses UDT protocol (<ulink url="http://udt.sourceforge.net/">http://udt.sourceforge.net/
-</ulink>) which does not encript data, hence you should not using this method
+</ulink>) which does not encript data, hence you should not use this method
 if you have sensitive data on your image.
-Transfer from Local to Amazon 10-20 Minutes depending on size of the disk and connection to Amazon.
+Transfer from Local to Amazon is 10-20 Minutes depending on size of the disk 
+and connection to Amazon.
 </para>
 </listitem>
 
@@ -116,7 +117,7 @@ and behave as expected.
 <listitem>
 <para>
 <emphasis>Register the EBS as an Amazon Machine Image (AMI)</emphasis>. 
-this is a single ec2-supplied command. Can also be accomplished using Amazon's web portal. 
+this is a two ec2-supplied commands. Can also be accomplished using Amazon's web portal. 
 </para>
 </listitem>
 
