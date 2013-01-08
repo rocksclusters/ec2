@@ -67,15 +67,65 @@ within EC2 instances called EBS.
 EBS volume can be of any size from 1 GB to 1 TB single or multiple partitions. 
 It is possible now to have EBS backed AMI, which means that their root file 
 system resides on an EBS volume.
-When you use EBS backed AMI (instead of S3 backed AMI), you can 
-have a the root file system of any size and deployment time is much shorter.
+The main advantage of this approach are that the the root file system can be 
+of any size and the deployment time is much shorter.
 Although running cost are a little higer since the user has to pay for the 
-EBS volume.
+EBS volume (above the cost of the running instance).
 </para>
 
 <para>
-Rocks support the deployment of such AMI. In paragraph <xref linkend="ebs-ec2-image">
-we give a short example of how to create EBS backed AMI using Rocks.
+Rocks supports the deployment of such AMI. The basic step to deploy a EBS 
+backed AMI are slightly different from the S3 backed AMI (see below).
+
+</para>
+
+<orderedlist>
+<listitem>
+<para>
+<emphasis>Kicktart a Rocks VM Appliance</emphasis>. In Rocks any appliance
+(except a frontend) can be built as a virtual machine.  
+EC2 supports only single ethernet interface appliances. On Local Cluster. About 10-15 minutes.
+</para>
+</listitem>
+
+
+<listitem>
+<para>
+<emphasis>Upload the machine into Amazon EBS</emphasis>. 
+Rocks EC2 provides a single command to upload a disk image into an EBS volume, 
+the disk image must be single partition. In this case there is no need to 
+bundle the disk in the AMI format (unlike the S3 backed AMI). To transfer the 
+data Rocks uses UDT protocol (<ulink url="http://udt.sourceforge.net/">http://udt.sourceforge.net/
+</ulink>) which does not encript data, hence you should not using this method
+if you have sensitive data on your image.
+Transfer from Local to Amazon 10-20 Minutes depending on size of the disk and connection to Amazon.
+</para>
+</listitem>
+
+<listitem>
+<para>
+<emphasis>Boot the uploaded EBS in Amazon</emphasis>.  
+This is through a single ec2-supplied command. Can also be accomplished using 
+Amazon's web portal. User can check and verify that the uploaded machine works
+and behave as expected.
+10-15 Minutes from submit to running. Dependent on Amazon internals. 
+</para>
+</listitem>
+
+
+<listitem>
+<para>
+<emphasis>Register the EBS as an Amazon Machine Image (AMI)</emphasis>. 
+this is a single ec2-supplied command. Can also be accomplished using Amazon's web portal. 
+</para>
+</listitem>
+
+</orderedlist>
+
+<para>
+
+In paragraph <xref linkend="ebs-ec2-image">
+we give a practical example of how to create EBS backed AMI using Rocks.
  
 </para>
 

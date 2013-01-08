@@ -10,7 +10,7 @@
 
 The EC2 Roll can be installed during the Frontend installation or added
 to a running frontend. In either case, virtual machine containers (VM-Containers in
-the Xen roll)  nodes must be (re)installed.
+the KVM roll)  nodes must be (re)installed.
 
 </para>
 
