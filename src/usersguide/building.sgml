@@ -242,5 +242,12 @@ machine is on irrespective of actual use.
 
 </section>
 
+
+<section id="ebs-ec2-image" xreflabel="Walkthrough Building an EC2 Image">
+<title>Creating EBS based EC2 Image using Rocks</title>
+<para>
+
+</para>
+</section>
 </chapter>
 

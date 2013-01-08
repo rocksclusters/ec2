@@ -1,4 +1,4 @@
-<chapter id="using" xreflabel="Using the Condor Roll">
+<chapter id="using" xreflabel="Using the EC2 roll">
 
 
 <title>Using the EC2 Roll</title>
@@ -55,6 +55,30 @@ this is a single ec2-supplied command. Can also be accomplished using Amazon's w
 <para>
 The next sections give an example of how to practically accomplish the above.
 </para>
+
+</section>
+
+<section id="using-ec2-ebs" xreflabel="Using EC2">
+<title>Using EBS base instance</title>
+
+<para>
+Amazon AWS support now provisioning of block level storage volumes for use 
+within EC2 instances called EBS.
+EBS volume can be of any size from 1 GB to 1 TB single or multiple partitions. 
+It is possible now to have EBS backed AMI, which means that their root file 
+system resides on an EBS volume.
+When you use EBS backed AMI (instead of S3 backed AMI), you can 
+have a the root file system of any size and deployment time is much shorter.
+Although running cost are a little higer since the user has to pay for the 
+EBS volume.
+</para>
+
+<para>
+Rocks support the deployment of such AMI. In paragraph <xref linkend="ebs-ec2-image">
+we give a short example of how to create EBS backed AMI using Rocks.
+ 
+</para>
+
 
 </section>
 
