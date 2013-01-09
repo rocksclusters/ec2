@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.5 2011/01/13 22:37:19 phil Exp $
+# $Id: Makefile,v 1.6 2013/01/09 01:00:07 clem Exp $
 #
 # @Copyright@
 # 
@@ -54,6 +54,9 @@
 # @Copyright@
 #
 # $Log: Makefile,v $
+# Revision 1.6  2013/01/09 01:00:07  clem
+# Need to delete the patch section from the Makefile since there is no more patches
+#
 # Revision 1.5  2011/01/13 22:37:19  phil
 # Checkpoint. New version of ami/api tools, condor plugin. lightweight appliance
 #
@@ -115,7 +118,7 @@ include Rules.mk
 
 build:
 	tar -zxf $(NAME)-$(DIREXT).$(TARBALL_POSTFIX)
-	(cd patch-files && find . -type f | grep -v CVS | cpio -pduv ../)
+	#(cd patch-files && find . -type f | grep -v CVS | cpio -pduv ../)
 	
 install::
 	mkdir -p $(ROOT)/$(PKGROOT)/$(NAME)
