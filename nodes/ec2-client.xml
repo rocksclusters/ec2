@@ -29,7 +29,7 @@ EC2-enabled Client
 <!-- Get the user's authorized key as root's key using Amazon published method-->
 <file name="/etc/rc.d/init.d/ec2-root-ssh" perms="755">
 <![CDATA[#!/bin/sh
-# $Id: ec2-client.xml,v 1.18 2012/10/09 17:12:31 clem Exp $
+# $Id: ec2-client.xml,v 1.19 2013/01/11 20:38:19 nadya Exp $
 #
 # chkconfig: 2345 60 40
 # description: ec2 ssh key access
@@ -44,10 +44,10 @@ if [ ! -d /root/.ssh ] ; then
         chmod 700 /root/.ssh
 fi
 # Fetch public key using HTTP
-curl http://169.254.169.254/2009-04-04//meta-data/public-keys/0/openssh-key > /tmp/my-key  2>/dev/null
+curl http://169.254.169.254/latest//meta-data/public-keys/0/openssh-key > /tmp/my-key  2>/dev/null
 while [ "$?" -ne "0" ] ; do
 	sleep 2
-	curl http://169.254.169.254/2009-04-04//meta-data/public-keys/0/openssh-key > /tmp/my-key  2>/dev/null
+	curl http://169.254.169.254/latest//meta-data/public-keys/0/openssh-key > /tmp/my-key  2>/dev/null
 done
 
 if [ -f /tmp/my-key ] ; then
@@ -80,7 +80,7 @@ function setMount(){
     # which change device based on instance type
     # http://docs.amazonwebservices.com/AWSEC2/latest/UserGuide/InstanceStorage.html#InstanceStoreDeviceNames
     #
-    OrginalDevice=`curl http://169.254.169.254/2009-04-04/meta-data/block-device-mapping/ephemeral0`
+    OrginalDevice=`curl http://169.254.169.254/latest/meta-data/block-device-mapping/ephemeral0`
     if [ "$?" != "0" ]; then
         echo "No ephemeral device found"
         return ;
@@ -141,7 +141,7 @@ if [ ! -d /mnt/ec2image ]; then
 	mkdir -p /mnt/ec2image
 fi
 
-#disablying rocks-grub
+<!-- disabling rocks-grub -->
 /etc/init.d/rocks-grub stop
 /sbin/chkconfig rocks-grub off
 
