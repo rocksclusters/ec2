@@ -258,7 +258,7 @@ ssh key inside the credentials directory.  The default image size is 10Gb. A dif
 size can be specified with <emphasis>size=X</emphasis> option. X is an integer multiple of 10.
 <screen>
 # cp /path/to/clem.pem /root/.ec2/clem.pem
-# chmod 640 /root/.ec2/clem.pem
+# chmod 600 /root/.ec2/clem.pem
 # rocks upload ec2 bundlefast devel-server-0-0-0 clem size=30
 Launching receiver instance and new EC2 compute-0-0-0 instance ...
 . . . . . . . . . . . . . 
