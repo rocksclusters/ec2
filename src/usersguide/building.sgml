@@ -254,9 +254,12 @@ section to create a virtual development appliance.
 <listitem>
 <para> <emphasis>Upload the image into Amazon EBS</emphasis>. The image must be
 uploaded into Amazon's EBS (Elastic Block Storage). To do so you need to place you 
-ssh key inside the credential directory.
+ssh key inside the credentials directory.  The default image size is 10Gb. A different 
+size can be specified with <emphasis>size=X</emphasis> option. X is an integer multiple of 10.
 <screen>
-# rocks upload ec2 bundlefast devel-server-0-0-0 clem
+# cp /path/to/clem.pem /root/.ec2/clem.pem
+# chmod 640 /root/.ec2/clem.pem
+# rocks upload ec2 bundlefast devel-server-0-0-0 clem size=30
 Launching receiver instance and new EC2 compute-0-0-0 instance ...
 . . . . . . . . . . . . . 
 New compute-0-0-0 instance started. Public DNS:  ec2-54-242-13-118.compute-1.amazonaws.com  Instance ID:  i-e17ffc90
@@ -278,10 +281,7 @@ SendRate(Mb/s)	RTT(ms)	CWnd	PktSndPeriod(us)	RecvACK	RecvNAK
 87.7814		85.756	11800	93.5776			11	49
 89.0065		79.016	14081	77.0038			26	0
 122.41		78.785	11602	125			79	14
-
-
 ....
-
 
 Reattching volume vol-e9ff5d97to new instance
 . . . . . . . . . . . . . . . . 
@@ -298,8 +298,8 @@ Terminating receiver instance
 
 
 <listitem>
-<para> After the previous step you should see an instance in terminated state and 
-and an instance in stopped state.
+<para><emphasis>Check the instance</emphasis>. Start the stopped instance, login to it and verify that everything is 
+as expected. After that you can poweroff the instance.
 <screen>
 export EC2_PRIVATE_KEY=/root/.ec2/pk.pem
 export EC2_CERT=/root/.ec2/cert.pem 
@@ -309,16 +309,8 @@ INSTANCE	i-3b3cbe4a	ami-e4f54a8d			stopped	clem	0		t1.micro	2013-01-08T19:41:13+
 BLOCKDEVICE	/dev/sda1	vol-ced17cb0	2013-01-08T19:53:57.000Z	false		
 RESERVATION	r-7457540c	277989259740	default
 INSTANCE	i-253cbe54	ami-e4f54a8d			terminated	clem	0		t1.micro	2013-01-08T19:41:14+0000	us-east-1a	aki-88aa75e1	ari-e3c1218a		monitoring-disabled					ebs					paravirtual	xen		sg-0558ba6c	default	false	
-</screen>
-</para>
-</listitem>
 
-<listitem>
-<para>Start the stopped instance, login to it and verify that everything is 
-as expected. After that you can poweroff the instance.
-<screen>
 # ec2-start-instances i-3b3cbe4a
-
 [...]
 
 # ec2-describe-instances
@@ -327,7 +319,6 @@ INSTANCE	i-3b3cbe4a	ami-e4f54a8d	ec2-107-20-118-103.compute-1.amazonaws.com	domU
 BLOCKDEVICE	/dev/sda1	vol-ced17cb0	2013-01-08T19:53:57.000Z	false		
 RESERVATION	r-7457540c	277989259740	default
 INSTANCE	i-253cbe54	ami-e4f54a8d			terminated	clem	0		t1.micro	2013-01-08T19:41:14+0000	us-east-1a	aki-88aa75e1	ari-e3c1218a		monitoring-disabled					ebs					paravirtual	xen		sg-0558ba6c	default	false	
-
 [...]
 
 # ssh -i /root/.ec2/clem.pem root@ec2-107-20-118-103.compute-1.amazonaws.com
@@ -345,20 +336,16 @@ EC2-enabled Client
 <warning>
 <para>
 Do NOT forget to shut down a running EC2 instance. Your credit card is charged for the time your 
-machine is on irrespective of actual use. 
-</para>
-</warning>
-<warning>
-<para>
+machine is on irrespective of actual use (stopped or running instance). 
 If you simply poweroff the machine your EBS volume will be kept allocated.
 You need to "terminte" the instance to destroy the EBS.
 </para>
 </warning>
+
 </listitem>
 
-
 <listitem>
-<para> If you are satisfied with your image you can register the EBS as 
+<para><emphasis>Register EBS-based AMI</emphasis>. If you are satisfied with your image you can register the EBS as 
 a new AMI. To create an AMI first you have to snapshot the EBS (which 
 is going to take approximately 5/10min) and then you can register 
 the snapshot.
@@ -370,12 +357,27 @@ SNAPSHOT	snap-13d7105c	vol-ced17cb0	pending	2013-01-08T20:07:50+0000		2779892597
 
 [...]
 
-# ec2-register -s snap-13d7105c -n tobedelete_test
+# ec2-register -a x86_64 -s snap-13d7105c -n tobedelete_test --kernel aki-88aa75e1
 MAGE	ami-130a837a
 </screen>
 </para>
-</listitem>
+<tip>
+<para>
+Options <emphasis>-a</emphasis> and <emphasis>--kernel</emphasis> are required to create 64 bit image. 
+If not specified, a 32 bit image will be created. 
+By default, <emphasis>ec2-create-snapshot</emphasis>  and <emphasis>ec2-register</emphasis>
+use <emphasis>us-east-1</emphasis> region. When a different region is specified via a command line option
+the kernel id will need to be updated to one that AWS supports for that region (check AWS documentation for
+<ulink url="http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/UserProvidedkernels.html">available kernels</ulink>)
+</para>
+</tip>
+<tip>
+<para>
+Please execute commands with <emphasis>-help</emphasis> option for more info on other available options. 
+</para>
+</tip>
 
+</listitem>
 
 </orderedlist>
 
