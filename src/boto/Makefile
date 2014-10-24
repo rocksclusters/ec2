@@ -64,17 +64,6 @@ PYTHON-INSTALL-OPTS = --install-scripts=$(PYTHON-SCRIPT-DIR) --install-lib=$(PYT
 
 build:
 	echo $(ROOT)/$(PY.ROCKS)
-	echo $(ROOT)/$(PY.ROCKS)
-	echo $(ROOT)/$(PY.ROCKS)
-	echo $(ROOT)/$(PY.ROCKS)
-	echo $(ROOT)/$(PY.ROCKS)
-	echo $(ROOT)/$(PY.ROCKS)
-	echo $(ROOT)/$(PY.ROCKS)
-	echo $(ROOT)/$(PY.ROCKS)
-	echo $(ROOT)/$(PY.ROCKS)
-	echo $(ROOT)/$(PY.ROCKS)
-	echo $(ROOT)/$(PY.ROCKS)
-	echo $(ROOT)/$(PY.ROCKS)
 	tar zxvf $(NAME)-$(VERSION).tar.gz
 	tar zxvf $(HASHNAME)-$(HASHVERSION).tar.gz
 

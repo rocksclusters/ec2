@@ -1,6 +1,6 @@
 PKGROOT		= /opt/rocks
 NAME    	= boto
-VERSION 	= 2.0b4
+VERSION 	= 2.6.0
 RELEASE 	= 1
 HASHNAME	= hashlib
 HASHVERSION	= 20081119
