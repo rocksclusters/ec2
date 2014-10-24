@@ -71,7 +71,7 @@ build:
 	gunzip -c $(NAME)-$(VERSION).$(TARBALL_POSTFIX) | $(TAR) -xf -
 	( 							\
 		cd $(NAME)-$(VERSION);				\
-		./configure --prefix=$(PKGROOT)/$(NAME) --disable-lzo;	\
+		./configure --prefix=$(PKGROOT)/$(NAME) --disable-lzo --bindir=/usr/bin;	\
 		$(MAKE);					\
 	)
 	
