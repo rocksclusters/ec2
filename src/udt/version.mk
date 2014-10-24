@@ -1,6 +1,6 @@
 PKGROOT		= /opt
 NAME    	= udt4
-VERSION 	= 4.10
+VERSION 	= 4.11
 RELEASE 	= 1
 TARBALL_PREFIX  = udt.sdk
 TARBALL_POSTFIX	= tar.gz

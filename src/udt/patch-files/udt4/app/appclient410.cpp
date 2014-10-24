@@ -11,7 +11,6 @@
 #include <iostream>
 #include <udt.h>
 #include "cc.h"
-#include "test_util.h"
 
 using namespace std;
 
@@ -29,8 +28,8 @@ int main(int argc, char* argv[])
       return 0;
    }
 
-   // Automatically start up and clean up UDT module.
-   UDTUpDown _udt_;
+   // use this function to initialize the UDT library
+   UDT::startup();
 
    struct addrinfo hints, *local, *peer;
 
@@ -54,7 +53,6 @@ int main(int argc, char* argv[])
    //UDT::setsockopt(client, 0, UDT_MSS, new int(9000), sizeof(int));
    //UDT::setsockopt(client, 0, UDT_SNDBUF, new int(10000000), sizeof(int));
    //UDT::setsockopt(client, 0, UDP_SNDBUF, new int(10000000), sizeof(int));
-   //UDT::setsockopt(client, 0, UDT_MAXBW, new int64_t(12500000), sizeof(int));
 
    // Windows UDP issue
    // For better performance, modify HKLM\System\CurrentControlSet\Services\Afd\Parameters\FastSendDatagramThreshold
@@ -128,14 +126,19 @@ int main(int argc, char* argv[])
       }
 
       if (ssize < readDataSize){
-         cout << "Error: something weird happen UDT didn't send the requested ammount of data....";
-         break;
+            cout << "Error: something weird happen UDT didn't send the requested ammount of data....";
+            break;
       }
    }
 
    UDT::close(client);
+
    delete [] data;
-   return 0;
+
+   // use this function to release the UDT library
+   UDT::cleanup();
+
+   return 1;
 }
 
 #ifndef WIN32
