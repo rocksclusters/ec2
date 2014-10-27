@@ -69,4 +69,7 @@
 . /opt/rocks/share/devel/src/roll/etc/bootstrap-functions.sh 
 
 compile_and_install boto 
-compile_and_install ec2-commands 
+
+compile ec2-commands 
+install rocks-ec2-commands
+
