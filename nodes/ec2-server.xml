@@ -22,9 +22,12 @@ EC2-compatible VMs
 #/opt/rocks/bin/rocks add attr ec2_kernelTar value=None
 #/opt/rocks/bin/rocks add attr ec2_kernelVersion value=None
 #/opt/rocks/bin/rocks add attr ec2_initrd value=None
-#this is PV-GRUB for US-East-1
-/opt/rocks/bin/rocks add attr ec2_aki_i386 value=aki-b6aa75df
-/opt/rocks/bin/rocks add attr ec2_aki_x86_64 value=aki-88aa75e1
+# this is PV-GRUB for US-East-1 From User Guide for Linux (API Version 2014-09-01)
+# can find listing via command
+# ec2-describe-images -o amazon --filter "name=pv-grub-*.gz"
+
+/opt/rocks/bin/rocks add attr ec2_aki_i386 value=aki-8f9dcae6
+/opt/rocks/bin/rocks add attr ec2_aki_x86_64 value=aki-919dcaf8
 
 # Add the ec2-dynamic appliance type. This is a convenient moniker to
 # do special things to appliances running in ec2
