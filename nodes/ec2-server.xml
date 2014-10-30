@@ -29,6 +29,7 @@ EC2-compatible VMs
 /opt/rocks/bin/rocks add attr ec2_aki_i386 value=aki-8f9dcae6
 /opt/rocks/bin/rocks add attr ec2_aki_x86_64 value=aki-919dcaf8
 
+<!--  need to verify that is not used anymore
 # Add the ec2-dynamic appliance type. This is a convenient moniker to
 # do special things to appliances running in ec2
 /opt/rocks/bin/rocks add appliance ec2-dynamic membership="EC2 Dynamic Host" compute=no public=yes
@@ -50,15 +51,17 @@ EC2-compatible VMs
 /opt/rocks/bin/rocks add appliance route ec2-dynamic 0.0.0.0 netmask=255.255.255.255 &Kickstart_PrivateAddress; 
 /opt/rocks/bin/rocks add appliance route ec2-dynamic 224.0.0.0 netmask=255.255.255.0 ec2tunnel
 /opt/rocks/bin/rocks add appliance route ec2-dynamic 255.255.255.255 netmask=255.255.255.255 ec2private
+-->
 
 # Enable ec2 by default for the devel-server appliance
 /opt/rocks/bin/rocks add appliance attr devel-server ec2_enable value=true
 
-
+<!--  need to verify that is not used anymore
 # Create some networking holders. These are just netmasks. but useful
 /opt/rocks/bin/rocks add network ec2public 0.0.0.0 netmask=255.255.255.255 mtu=1500 dnszone=compute-1.amazonaws.com servedns=false
 /opt/rocks/bin/rocks add network ec2private 0.0.0.0 netmask=255.255.254.0 mtu=1500 servedns=false
 /opt/rocks/bin/rocks add network ec2tunnel 0.0.0.0 netmask=255.255.255.252 mtu=1500
+-->
 
 </post>
 </kickstart> 
