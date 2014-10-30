@@ -81,8 +81,8 @@ install::
 		cd $(NAME)-$(VERSION);				\
 		$(MAKE) prefix=$(ROOT)/$(PKGROOT)/$(NAME) install;\
 	)
-	mkdir -p $(ROOT)/etc/init.d
-	install -m 755 vtun.rc $(ROOT)/etc/init.d/vtun
+	mkdir -p $(ROOT)/etc/rc.d/init.d
+	install -m 755 vtun.rc $(ROOT)/etc/rc.d/init.d/vtun
 	mkdir -p $(ROOT)/etc/sysconfig
 	touch $(ROOT)/etc/sysconfig/vtun
 
