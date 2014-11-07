@@ -74,7 +74,7 @@ Add and build a virtual development appliance
 added VM devel-server-0-0-0 on physical node vm-container-0-0
 # rocks set host boot action=install devel-server-0-0-0
 # rocks set host attr ec2_enable true
-# rocks start host devel-server-0-0-0
+# rocks start host vm devel-server-0-0-0
 </screen>
 
 <tip>
