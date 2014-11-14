@@ -55,7 +55,8 @@ import stat
 import time
 import sys
 import string
-import rocks.commands
+import rocks.db.mappings.kvm
+import rocks.db.vmextend
 import tempfile
 
 class Command(rocks.commands.HostArgumentProcessor, rocks.commands.create.command):
@@ -102,55 +103,45 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.create.comman
 	"""
 
 	def run(self, params, args):
-		hosts = self.getHostnames(args)
-		
+
+		nodes = self.newdb.getNodesfromNames(args,
+				preload=['vm_defs', 'vm_defs.disks'])
+
 		#some arguments parsing
-		if len(hosts) != 1:	
+		if len(nodes) != 1:
 			self.abort('must supply only one host')
 		else:
-			host = hosts[0]
-		
+			node = nodes[0]
+
+		host = node.name
+
 		(credentialDir, outputpath, imagename) = self.fillParams( 
 		            [('credentialdir', ), 
 		            ('outputpath', ) ,
 		            ('imagename', )
 		            ] )
-			
+
 		if not credentialDir:
 			credentialDir = "~/.ec2/"
-		
-		
+
+
 		if not imagename:
 			imagename = ""
-			
-		#
-		# the name of the physical host that will boot
-		# this VM host
-		#
-		rows = self.db.execute("""select vn.physnode from
-			vm_nodes vn, nodes n where n.name = '%s'
-			and n.id = vn.node""" % (host))
-		if rows == 1:
-			physnodeid, = self.db.fetchone()
-		else:
-			self.abort("Impossible to fetch the physical node.")
-		rows = self.db.execute("""select name from nodes where
-			id = %s""" % (physnodeid))
-		if rows == 1:
-			physhost, = self.db.fetchone()
+
+		if node.vm_defs.physNode:
+			physhost = node.vm_defs.physNode.name
 		else:
 			self.abort("Impossible to fetch the physical node.")
 		
 		#ok we have to bunble the vm host runnning on physhost
 		#
 		#let's check that the machine is not running
-		print 'physhost is %s; host is %s'  %  (physhost,host)
-		import rocks.commands.list.host.vm
-		a = rocks.commands.list.host.vm.Command(None)
-		state = a.getStatus( physhost, host)
+		print 'physhost is %s; host is %s' % (physhost,host)
+		import rocks
+		state = rocks.db.vmextend.getStatus(node)
 		
 		if state != 'nostate':
-			rocks.commands.Abort("The vm " + host + " is still running (" + state + 
+			self.abort("The vm " + host + " is still running (" + state + 
 		                "). Please shut it down before running this command.")
 		
 		#which outputpath should we use...???
@@ -174,9 +165,9 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.create.comman
 		# -------------------      clear the outputpath and mkdir if it doesn't exist
 		print "Creating output directories"
 		output = self.command('run.host', [physhost,
-		                    'rm -rf %s' % outputpath, 'collate=true' ] )
+		                    'rm -rf %s' % outputpath, 'collate=true'])
 		output = self.command('run.host', [physhost,
-		                    'mkdir -p %s' % outputpath, 'collate=true' ] )
+		                    'mkdir -p %s' % outputpath, 'collate=true'])
 		if len(output) > 1:
 			self.abort('We can not create the directory ' + outputpath 
 				+ ' please check that is not mounted or used')
@@ -296,7 +287,8 @@ sed -i 's/kernel \([^ ]*\) .*/kernel \\1 root=\/dev\/xvde1/g' $GRUBDIR/grub.conf
 
 		# ------------------------   create the script
 		print "Creating the bundle script"
-		arch=self.command('report.host.attr', [ host, "attr=arch" ] ).strip()
+		# we now support only 64 bit
+		arch = 'x86_64'
 		aki=self.command('report.host.attr', [ host, "attr=ec2_aki_%s" % arch ] ).strip()
 		print "VM is of arch %s and uses default EC2 kernel ID %s" % (arch,aki)
 		bundleScript = """#!/bin/bash
@@ -333,7 +325,7 @@ echo bundling...
 		# -----------------------     run the script
 		#execute it with 'chroot /mnt/rocksimage/ /mnt/ec2image/script.sh rocksdevel'
 		print "Running the bundle script this step might take around 10-20 minutes"
-		retval = os.system( 'ssh %s "chroot /mnt/rocksimage /mnt/ec2image/script.sh %s"' % 
+		retval = os.system('ssh %s "chroot /mnt/rocksimage /mnt/ec2image/script.sh %s"' %
 							(physhost, imagename))
 		#I don't know how to detect if the bundle script went well or not...
 		#print "Bundle created sucessfully in: " + outputpath
