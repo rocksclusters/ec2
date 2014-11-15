@@ -6,7 +6,7 @@ Partitioning required to run in ec2
 </description>
 <pre>
 echo "clearpart --all --initlabel --drives=vda
-part / --size 9500 --fstype=ext3 --ondisk vda " > /tmp/user_partition_info
+part / --size 9500 --grow --fstype=ext3 --ondisk vda " > /tmp/user_partition_info
 </pre>
 
 <post>
