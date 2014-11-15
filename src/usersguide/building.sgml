@@ -16,13 +16,15 @@ or in EC2 can be used to build Rolls. It also includes a working (but unpopulate
 </para>
 
 <para>
-This example assumes that you have the KVM roll (required) and VM-container (Called VM-container-0-0) in your development cluster. The steps are then. It also assumes that root's .ec2 directory
-has been properly populated with keys and certificates.
+This example assumes that you have the KVM roll (required) and VM-container (Called VM-container-0-0)
+in your development cluster. It also assumes that root's .ec2 directory
+has been properly populated with keys and certificates. The steps are then:
 <orderedlist>
 
 <listitem>
 <para>
 Build a local development appliance (the host must have associated an attribute ec2_enable set to true)
+and it must have a disk size of 10GB maximum
 </para>
 
 </listitem>
@@ -68,12 +70,13 @@ the Amazon web console
 <orderedlist>
 <listitem>
 <para>
-Add and build a virtual development appliance
+Add and build a virtual development appliance with a disk size of 10GB
 <screen>
 # rocks add host vm vm-container-0-0 membership="Development Appliance"
 added VM devel-server-0-0-0 on physical node vm-container-0-0
 # rocks set host boot action=install devel-server-0-0-0
 # rocks set host attr ec2_enable true
+# rocks set host vm devel-server-0-0-0 disksize=10
 # rocks start host vm devel-server-0-0-0
 </screen>
 
