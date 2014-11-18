@@ -166,9 +166,9 @@ Bundle upload completed..
 <para> Register the image with Amazon EC2. The following will give you an Amazon
 AMI. You must use this in thee next step
 <screen>
-export EC2_PRIVATE_KEY=/root/.ec2/pk.pem
-export EC2_CERT=/root/.ec2/cert.pem 
-# ec2-register my-test/devel-server-0-0-0.manifest.xml -n "rocks test server"
+export AWS_ACCESS_KEY="`cat /root/.ec2/access-key`"
+export AWS_SECRET_KEY="`cat /root/.ec2/access-key-secret`"
+# ec2-register my-test/devel-server-0-0-0.manifest.xml -n "rocks test server" --kernel  `rocks report host attr localhost attr=ec2_aki_x86_64`
 IMAGE   ami-6b608d08
 </screen>
 </para>
@@ -178,8 +178,8 @@ IMAGE   ami-6b608d08
 <listitem>
 <para> Start an Amazon AMI. The -k command must be the name of a register Amazon keypair 
 <screen>
-export EC2_PRIVATE_KEY=/root/.ec2/pk.pem
-export EC2_CERT=/root/.ec2/cert.pem 
+export AWS_ACCESS_KEY="`cat /root/.ec2/access-key`"
+export AWS_SECRET_KEY="`cat /root/.ec2/access-key-secret`"
 # ec2-run-instances -t m1.large ami-6b608d08 -k phil-aws
 RESERVATION     r-6cee7f04      572535418485    default
 INSTANCE        i-7c516914      ami-6b608d08                    pending phil-aws        0         m1.large 2010-01-19T19:01:38+0000        us-east-1b      aki-9800e5f1                    monitoring-disabled
@@ -304,8 +304,8 @@ Terminating receiver instance
 <para><emphasis>Check the instance</emphasis>. Start the stopped instance, login to it and verify that everything is 
 as expected. After that you can poweroff the instance.
 <screen>
-export EC2_PRIVATE_KEY=/root/.ec2/pk.pem
-export EC2_CERT=/root/.ec2/cert.pem 
+export AWS_ACCESS_KEY="`cat /root/.ec2/access-key`"
+export AWS_SECRET_KEY="`cat /root/.ec2/access-key-secret`"
 # ec2-describe-instances
 RESERVATION	r-7a575402	277989259740	default
 INSTANCE	i-3b3cbe4a	ami-e4f54a8d			stopped	clem	0		t1.micro	2013-01-08T19:41:13+0000	us-east-1a	aki-88aa75e1	ari-e3c1218a		monitoring-disabled					ebs					paravirtual	xen	sg-0558ba6c	default	false	
@@ -353,14 +353,14 @@ a new AMI. To create an AMI first you have to snapshot the EBS (which
 is going to take approximately 5/10min) and then you can register 
 the snapshot.
 <screen>
-export EC2_PRIVATE_KEY=/root/.ec2/pk.pem
-export EC2_CERT=/root/.ec2/cert.pem 
+export AWS_ACCESS_KEY="`cat /root/.ec2/access-key`"
+export AWS_SECRET_KEY="`cat /root/.ec2/access-key-secret`"
 # ec2-create-snapshot -d "tobedeleted"  vol-ced17cb0
 SNAPSHOT	snap-13d7105c	vol-ced17cb0	pending	2013-01-08T20:07:50+0000		277989259740	10	tobedeleted
 
 [...]
 
-# ec2-register -a x86_64 -s snap-13d7105c -n tobedelete_test --kernel aki-88aa75e1
+# ec2-register -a x86_64 -s snap-13d7105c -n tobedelete_test --kernel `rocks report host attr localhost attr=ec2_aki_x86_64`
 MAGE	ami-130a837a
 </screen>
 </para>
