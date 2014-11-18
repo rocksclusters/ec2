@@ -247,8 +247,7 @@ BASEROOT=/mnt/rocksimage
 GRUBDIR=$BASEROOT/boot/grub
 
 cp $GRUBDIR/grub.conf $GRUBDIR/grub-orig.conf
-sed -i 's/hd0,0/hd0/g' $GRUBDIR/grub.conf
-sed -i 's/kernel \([^ ]*\) .*/kernel \\1 root=\/dev\/xvde1/g' $GRUBDIR/grub.conf
+sed -i 's/kernel \([^ ]*\) .*/kernel \\1 root=\/dev\/xvde1 ro console=ttyS0,115200/g' $GRUBDIR/grub.conf
 """
 		scriptName = '/tmp/fixgrub.sh'
 
