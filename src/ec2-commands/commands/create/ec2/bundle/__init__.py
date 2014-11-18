@@ -230,16 +230,12 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.create.comman
 
 		# ------------------------   create fstab
 		print "Fixing fstab"
-		fstab="""# Default /etc/fstab
-/dev/xvde1  /     ext3    defaults 1 1
-tmpfs       /dev/shm  tmpfs   defaults 0 0
-none        /dev/pts devpts  gid=5,mode=620 0 0
-none        /proc proc    defaults 0 0
-none        /sys  sysfs   defaults 0 0
-"""
-		if not createScript(fstab, '/mnt/rocksimage/etc/fstab', physhost):
+		output = self.command('run.host', [physhost,
+			'''sed -i 's/.* \/ \(.*\)/\/dev\/xvde1            \/ \\1/g' /mnt/rocksimage/etc/fstab''',
+			'collate=true'])
+		if len(output) > 1:
 			self.terminate(physhost, diskVM, outputpath)
-			self.abort('Could not copy the fstab to the host: ' + physhost )
+			self.abort('Could not fix the fstab on the the host: ' + physhost)
 
 
 		# ------------------------   fix the grub.conf for ec2
