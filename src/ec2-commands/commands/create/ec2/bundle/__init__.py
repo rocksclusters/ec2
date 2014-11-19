@@ -247,7 +247,8 @@ BASEROOT=/mnt/rocksimage
 GRUBDIR=$BASEROOT/boot/grub
 
 cp $GRUBDIR/grub.conf $GRUBDIR/grub-orig.conf
-sed -i 's/kernel \([^ ]*\) .*/kernel \\1 root=\/dev\/xvde1 ro console=ttyS0,115200/g' $GRUBDIR/grub.conf
+sed -i 's/hd0,0/hd0/g' $GRUBDIR/grub.conf
+sed -i 's/kernel \([^ ]*\) .*/kernel \\1 root=\/dev\/xvde1 console=ttyS0,115200/g' $GRUBDIR/grub.conf
 """
 		scriptName = '/tmp/fixgrub.sh'
 
@@ -265,14 +266,20 @@ sed -i 's/kernel \([^ ]*\) .*/kernel \\1 root=\/dev\/xvde1 ro console=ttyS0,1152
 
 		# now we need to unmount before we can bundle
 		# new ec2-bundle-image
-		self.terminate(physhost, diskVM, outputpath)
+		output = self.command('run.host', [physhost,
+			"umount /mnt/rocksimage",'collate=true'])
+		# 
+		print "removing parttion table"
+		temp_disk_nopart = outputpath + "/disk.img"
+		output = self.command('run.host', [physhost, 'dd if=%s of=%s bs=4M' %
+				(devPath, temp_disk_nopart)])
 
+		output = self.command('run.host', [physhost,
+				"kpartx -d -v %s " % diskVM])
 		# ------------------------   create the script
 		print "Creating the bundle script"
 		# we now support only 64 bit
 		arch = 'x86_64'
-		aki=self.command('report.host.attr', [ host, "attr=ec2_aki_%s" % arch ] ).strip()
-		print "VM is of arch %s and uses default EC2 kernel ID %s" % (arch,aki)
 		bundleScript = """#!/bin/bash
 
 if [ -n "$1" ] ;
@@ -290,19 +297,17 @@ OutputPath="%s"
 echo bundling...
 /opt/ec2/bin/ec2-bundle-image -d $OutputPath -i %s -c $OutputPath/.ec2/cert.pem -k $OutputPath/.ec2/pk.pem -u `cat $OutputPath/.ec2/user` $IMAGENAME --arch %s
 
-""" % (outputpath, diskVM, arch)
+""" % (outputpath, temp_disk_nopart, arch)
 		if not createScript(bundleScript, '%s/script.sh' % outputpath, physhost):
-			self.command('run.host', [ physhost, 
-				'cp /mnt/rocksimage/boot/grub/grub-orig.conf /mnt/rocksimage/boot/grub/grub.conf'])
-			self.terminate(physhost, diskVM, outputpath)
 			self.abort('Could not copy the script to the host: ' + physhost )
-		
+
 		# -----------------------     run the script
 		#execute it with 'chroot /mnt/rocksimage/ /mnt/ec2image/script.sh rocksdevel'
 		print "Running the bundle script this step might take around 10-20 minutes"
 		self.command('run.host', [physhost, '%s/script.sh %s' % (outputpath , imagename)])
-		#I don't know how to detect if the bundle script went well or not...
-		#print "Bundle created sucessfully in: " + outputpath
+		#removing temporary image
+		output = self.command('run.host', [physhost,
+				"rm -rf " + temp_disk_nopart])
 
 
 	def terminate(self, physhost, diskVM, output):
@@ -311,8 +316,6 @@ echo bundling...
 			"umount /mnt/rocksimage",'collate=true'])
 		output = self.command('run.host', [physhost,
 			"kpartx -d -v %s " % diskVM])
-		#output = self.command('run.host', [physhost,
-		#	"rm -rf %s" % output])
 
 
 def createScript(script, outputFilename, hostname):
