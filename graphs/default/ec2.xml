@@ -71,7 +71,6 @@
 		<to>selinux</to>
 		<to>i18n</to>
 		<to>411-base</to>
-		<to>greceptor</to>
 		<to>mail</to>
 		<to>partition</to>
 		<to>yum</to>
