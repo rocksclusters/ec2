@@ -71,7 +71,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
         <param type='string' name='amireceiver'>
         The AMI to be used to boot receiver instance
 
-        default is 'ami-e4f54a8d'
+        default is 'ami-4e0c7f26'
         </param>
 
         <param type='string' name='size'>
@@ -91,51 +91,27 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
 
         <param type='string' name='availability_zone'>
         The availability zone where the new machine will be started within the region 
-        specified by the region command
+        specified by the region.
         
-        default is 'us-east-1a'
+        default is None
         </param>
 
         <param type='string' name='kernelid'>
         The kernelid to be used to boot up receiver instance
+
+	You should use the PV-GRUB kernels which are updated
+	waaaaay too frequently to keep up with them. You can find
+	a list at:
+	http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/UserProvidedKernels.html
         
-        default is 'aki-88aa75e1' which is for US-East-1 64 bit
+	default is None which uses the one specified in the AMI
+	</param>
 
-	US-East-1
-	aki-88aa75e1     64bit
-	aki-b6aa75df     32bit
+	<param type='string' name='ramdiskid'>
+	The ramdiskid to be used to boot up receiver instance
 
-	US-West-1
-	aki-f77e26b2     64bit
-	aki-f57e26b0     32bit
-	
-	US-West-2
-	aki-fc37bacc     64bit
-	aki-fa37baca     32bit
-
-	EU-West-1
-	aki-71665e05     64bit
-	aki-75665e01     32bit
-	
-	AP-SouthEast-1
-	aki-fe1354ac     64bit
-	aki-f81354aa     32bit
-	
-	AP-NorthEast-1
-	aki-44992845     64bit
-	aki-42992843     32bit
-	
-	SA-East-1
-	aki-c48f51d9     64bit
-	aki-ca8f51d7     32bit
-	
-        </param>
-
-        <param type='string' name='ramdiskid'>
-        The ramdiskid to be used to boot up receiver instance
-        
-        default is '' (it must be empty since we are using user selectable kernel)
-        </param>
+	default is None (it must be empty since we are using user selectable kernel)
+	</param>
 
         <param type='string' name='instancetype'>
         The type of instance receiver instance will be.
@@ -177,19 +153,20 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                         size, availability_zone, instanceType, snapshotDesc, instID ) = self.fillParams( 
                             [('credentialdir','/root/.ec2'), 
                             ('region', 'us-east-1'),
-                            ('amireceiver', 'ami-e4f54a8d'),
+                            ('amireceiver', 'ami-4e0c7f26'),
                             ('securitygroups', 'default'),
-                            ('kernelid', 'aki-88aa75e1'),
-                            ('ramdiskid', ''),
+                            #('kernelid', 'aki-919dcaf8'),
+                            ('kernelid', None),
+                            ('ramdiskid', None),
                             ('size', ''),
-		            ('availability_zone', 'us-east-1a'),
+		            ('availability_zone', None),
                             ('instancetype', 't1.micro'),
                             ('snapshotdesc', ''),
                             ('instID', ''),
                             ] )
 
 		# This is the image template that will be used to create the new machine
-		amidump = 'ami-e4f54a8d'
+		amidump = amireceiver
                 tempDir = "/tmp" 
                 # set port to 9000
                 port = 9000
@@ -402,8 +379,8 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
 		except boto.exception.EC2ResponseError:
                         print "Firewall rules is already present, not a problem"
                 print 'Formatting volume and mounting'
-                runCommandString = "yes | mkfs -t ext3 /dev/xvdl ; mkdir -p /mnt/tmp; " +\
-                        "mount /dev/xvdl /mnt/tmp; /opt/udt4/bin/server.sh </dev/null >/dev/null 2>&1 & " 
+                runCommandString = "yes | mkfs -t ext3 /dev/sdh ; mkdir -p /mnt/tmp; " +\
+                        "mount /dev/sdh /mnt/tmp; /opt/udt4/bin/server.sh </dev/null >/dev/null 2>&1 & " 
                 command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + \
                         ' root@' + receiverInstance.dns_name + ' "' + runCommandString + '"'
                 # fix encoding bug with shlex see https://review.openstack.org/#/c/5335/
@@ -458,7 +435,7 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
                 starttime = datetime.now()
                 print 'Running the final fixes on the disk'
                 #removing root password, fixing fstab, labeling disk
-                runCommandString = "e2label /dev/xvdl /; rm -rf /mnt/tmp/etc/fstab ; " +\
+                runCommandString = "e2label /dev/sdh /; rm -rf /mnt/tmp/etc/fstab ; " +\
                         "echo \'/dev/xvde1 /        ext3    defaults       1 1\' > /mnt/tmp/etc/fstab; " +\
                         "echo \'none      /mnt     ext3    defaults       0 0\' >> /mnt/tmp/etc/fstab; " +\
                         "echo \'devpts    /dev/pts devpts  gid=5,mode=620 0 0\' >> /mnt/tmp/etc/fstab; " +\
