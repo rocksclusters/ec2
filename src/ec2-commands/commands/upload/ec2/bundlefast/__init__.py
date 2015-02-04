@@ -17,6 +17,7 @@ import boto.ec2
 from boto.ec2.connection import EC2Connection
 import boto.ec2.blockdevicemapping
 import subprocess, shlex
+from subprocess import PIPE, Popen
 from datetime import datetime
 
 class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.command):
@@ -379,8 +380,23 @@ class Command(rocks.commands.HostArgumentProcessor, rocks.commands.upload.comman
 		except boto.exception.EC2ResponseError:
                         print "Firewall rules is already present, not a problem"
                 print 'Formatting volume and mounting'
-                runCommandString = "yes | mkfs -t ext3 /dev/sdh ; mkdir -p /mnt/tmp; " +\
-                        "mount /dev/sdh /mnt/tmp; /opt/udt4/bin/server.sh </dev/null >/dev/null 2>&1 & " 
+
+                # try to understand what is the name of the latest block device
+                command = 'ssh -i ' + credentialDir + '/' + keypair + '.pem' + \
+                        ' root@'  + receiverInstance.dns_name
+                command = shlex.split(command.encode('ascii'))
+                command.append('''dmesg |grep blkfront |tail -1 |awk '{sub(":", "", $2); print $2}' ''')
+                p = Popen(command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+                device, stderr = p.communicate(input=None)
+                if p.returncode > 0:
+                        self.abort('Unable to discover remove block device name\n' + \
+                                stderr)
+
+                device = device.strip()
+
+                runCommandString = "yes | mkfs -t ext3 /dev/" + device + " ; " + \
+                        "mkdir -p /mnt/tmp; mount /dev/" + device + " /mnt/tmp; " + \
+                        "/opt/udt4/bin/server.sh </dev/null >/dev/null 2>&1 & "
                 command = 'ssh -t -T -i ' + credentialDir + '/' + keypair + '.pem' + \
                         ' root@' + receiverInstance.dns_name + ' "' + runCommandString + '"'
                 # fix encoding bug with shlex see https://review.openstack.org/#/c/5335/
